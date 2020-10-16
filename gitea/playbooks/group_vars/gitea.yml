@@ -1,0 +1,9 @@
+---
+
+ocp_project: gitea
+
+ocp_username: developer
+
+uninstall_cluster_resources: false
+
+uninstall_namespace: true

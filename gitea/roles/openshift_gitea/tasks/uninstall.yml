@@ -1,0 +1,34 @@
+---
+
+- name: delete Gitea instance
+  k8s:
+    state: absent
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/gitea.j2"
+
+- name: delete OpenShift objects for Gitea operator
+  k8s:
+    state: absent
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+    - "{{ resources_dir }}/operator.j2"
+    - "{{ resources_dir }}/cluster_role_binding.j2"
+    - "{{ resources_dir }}/service_account.j2"
+
+- name: delete cluster-wide OpenShift objects for Gitea operator
+  k8s:
+    state: absent
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+    - "{{ resources_dir }}/crd.j2"
+    - "{{ resources_dir }}/cluster_role.j2"
+  when: uninstall_cluster_resources|bool == true
+
+- name: delete Gitea operator namespace
+  k8s:
+    state: absent
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+    - "{{ resources_dir }}/namespace.j2"
+  when: uninstall_namespace|bool == true

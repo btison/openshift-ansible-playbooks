@@ -1,0 +1,30 @@
+---
+
+gitea_operator_project: "{{ ocp_project }}"
+
+gitea_operator_image: quay.io/gpte-devops-automation/gitea-operator
+gitea_operator_image_tag: v0.17
+
+gitea_operator_sa: gitea-operator
+gitea_operator_deployment: gitea-operator
+
+gitea_operator_deploy_gitea_instance: true
+
+gitea_operator_gitea_name: gitea
+gitea_operator_gitea_image: quay.io/gpte-devops-automation/gitea
+gitea_operator_gitea_image_tag: 1.12.1
+gitea_operator_gitea_volume_size: 10Gi
+gitea_operator_postgresql_volume_size: 10Gi
+gitea_operator_ssl_route: true
+gitea_operator_gitea_route: ""
+
+# for creating an admin user
+gitea_operator_create_admin: true
+gitea_operator_admin_user: gitea
+gitea_operator_admin_password: gitea
+
+# for creating users in gitea
+gitea_operator_create_users: true
+gitea_operator_num_users: 9
+gitea_operator_generate_user_format: user%d
+gitea_operator_user_password: openshift

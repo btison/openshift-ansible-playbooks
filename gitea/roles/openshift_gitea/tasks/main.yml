@@ -1,0 +1,121 @@
+---
+
+- name: create OpenShift objects for Gitea operator
+  k8s:
+    state: present
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+    - "{{ resources_dir }}/namespace.j2"
+    - "{{ resources_dir }}/crd.j2"
+    - "{{ resources_dir }}/service_account.j2"
+    - "{{ resources_dir }}/cluster_role.j2"
+    - "{{ resources_dir }}/cluster_role_binding.j2"
+    - "{{ resources_dir }}/operator.j2"
+
+- name: wait for Gitea operator pod to be ready
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ gitea_operator_project }}"
+    name: "{{ gitea_operator_deployment }}"
+  register: r_gitea_operator_deployment
+  retries: 20
+  delay: 10
+  until:
+  - r_gitea_operator_deployment.resources is defined
+  - r_gitea_operator_deployment.resources | length | int > 0
+  - r_gitea_operator_deployment.resources[0].status.availableReplicas is defined
+  - r_gitea_operator_deployment.resources[0].status.availableReplicas | int == r_gitea_operator_deployment.resources[0].spec.replicas | int
+
+- name: deploy Gitea instance
+  when: gitea_operator_deploy_gitea_instance | bool
+  block:
+  - name: create OpenShift Custom Resource for Gitea instance
+    k8s:
+      state: present
+      definition: "{{ lookup('template', resource ) | from_yaml }}"
+
+  - name: Wait for Gitea pod to be ready
+    k8s_info:
+      api_version: v1
+      kind: Deployment
+      namespace: "{{ gitea_operator_project }}"
+      name: "{{ gitea_operator_gitea_name }}"
+    register: r_gitea_deployment
+    retries: 40
+    delay: 10
+    until:
+    - r_gitea_deployment.resources | length | int > 0
+    - r_gitea_deployment.resources[0].status.availableReplicas is defined
+    - r_gitea_deployment.resources[0].status.availableReplicas | int == r_gitea_deployment.resources[0].spec.replicas | int
+  vars: 
+    resource: "{{ resources_dir }}/gitea.j2"
+
+- name: search for Gitea pod
+  k8s_info:
+    kind: Pod
+    namespace: "{{ gitea_operator_project }}"
+    label_selectors:
+      - app = gitea
+  register: r_gitea_pod
+
+- name: search for Gitea route
+  k8s_info:
+    kind: Route
+    api_version: route.openshift.io/v1
+    namespace: "{{ gitea_operator_project }}"
+    label_selectors:
+      - app = gitea
+  register: r_gitea_route
+
+- name: configure a Gitea admin user
+  block:
+    - name: check if Gitea admin user already exists
+      uri:
+        url: "https://{{ r_gitea_route.resources[0].spec.host }}/api/v1/users/{{ gitea_operator_admin_user }}"
+        method: GET
+        validate_certs: false
+        status_code: 200, 404
+      register: r_gitea_admin_user
+      failed_when: r_gitea_admin_user.status != 200 and r_gitea_admin_user.status != 404
+    
+    - name: create admin user in Gitea
+      command: >
+        oc exec {{ r_gitea_pod.resources[0].metadata.name }}
+        -n {{ gitea_operator_project }}
+        -- /home/gitea/gitea admin create-user --username {{ gitea_operator_admin_user }}
+        --password {{ gitea_operator_admin_password }}
+        --email {{ gitea_operator_admin_user }}@example.com
+        --must-change-password=false --admin -c /home/gitea/conf/app.ini
+      when: r_gitea_admin_user.status == 404
+  when: gitea_operator_create_admin | bool
+
+- name: create the users in Gitea
+  include_tasks: create_user.yml
+  loop: "{{ range(0, gitea_operator_num_users | int + 1, 1) | list }}"
+  when: gitea_operator_create_users | bool
+
+- name: print the Gitea route
+  debug:
+    msg: "You can access Gitea via the URL https://{{ r_gitea_route.resources[0].spec.host }}"
+
+- name: print admin credentials when an admin was created
+  when: gitea_operator_create_admin | bool
+  debug:
+    msg: "The Gitea admin username is '{{ gitea_operator_admin_user }}' and the password is '{{ gitea_operator_admin_password }}'"
+
+- name: print the user details if users are created
+  when: gitea_operator_create_users | bool
+  debug:
+    msg: >-
+      Gitea users were created, from {{ gitea_operator_generate_user_format | format(0) }} to
+      {{ gitea_operator_generate_user_format | format(gitea_operator_num_users) }} with the password
+      '{{ gitea_operator_user_password }}'
+
+- name: give user {{ ocp_username }} admin privileges in {{ gitea_operator_project }} namespace
+  k8s:
+    state: present
+    namespace: "{{ gitea_operator_project }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/namespace-admin-rb.j2"

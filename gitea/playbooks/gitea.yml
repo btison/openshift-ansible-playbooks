@@ -1,0 +1,24 @@
+---
+
+- name: Deploy Gitea
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  run_once: true
+  vars_files:
+    - group_vars/gitea.yml
+
+  tasks:
+    - include_role:
+        name: ../roles/openshift_gitea
+      when: >
+        ACTION is not defined or
+        ACTION is none or
+        ACTION|trim() == "" or
+        ACTION|trim() == "install"
+    - include_role:
+        name: ../roles/openshift_gitea
+        tasks_from: uninstall
+      when: >
+        ACTION is defined and
+        ACTION|trim() == "uninstall"
