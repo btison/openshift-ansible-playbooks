@@ -1,0 +1,156 @@
+---
+
+- name: get packagemanifest for openshift serverless operator
+  k8s_info:
+    api_version: packages.operators.coreos.com/v1
+    kind: PackageManifest
+    name: "{{ openshift_serverless_packagemanifest }}"
+    namespace: openshift-marketplace
+  register: r_packagemanifest
+
+- name: set facts for openshift serverless operator
+  set_fact:
+    openshift_serverless_subscription_package_name: "{{ r_packagemanifest.resources[0].status.packageName }}"
+    openshift_serverless_subscription_catalog_source: "{{ r_packagemanifest.resources[0].status.catalogSource }}"
+    openshift_serverless_subscription_catalog_source_namespace: "{{ r_packagemanifest.resources[0].status.catalogSourceNamespace }}"
+
+- name: determine channel for openshift serveless operator if no channel specified
+  when: openshift_serverless_subscription_channel | default("") | length == 0
+  set_fact:
+    openshift_serverless_subscription_channel: "{{ r_packagemanifest.resources[0].status.defaultChannel }}"
+
+- name: print openshift serverless channel to be installed
+  debug:
+    msg: "OpenShift Serverless operator channel to be installed: {{ openshift_serverless_subscription_channel }}"
+
+- name: "create subscription for openshift serverless operator in {{ openshift_serverless_subscription_namespace }}"
+  k8s:
+    state: present
+    namespace: "{{ openshift_serverless_subscription_namespace }}"
+    definition: "{{ lookup('template', resource) | from_yaml }}"
+  vars:
+    subscription_name: "{{ openshift_serverless_subscription_name }}"
+    subscription_channel: "{{ openshift_serverless_subscription_channel }}"
+    automatic_installplan_approval: "{{ openshift_serverless_automatic_installplan_approval }}"
+    subscription_package_name: "{{ openshift_serverless_subscription_package_name }}"
+    subscription_catalog_source: "{{ openshift_serverless_subscription_catalog_source }}"
+    subscription_catalog_source_namespace: "{{ openshift_serverless_subscription_catalog_source_namespace }}"
+    subscription_starting_csv: "{{ openshift_serverless_subscription_starting_csv }}"
+    resource: "{{ resources_dir }}/subscription.j2"
+
+- name: wait until installplan is created
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: InstallPlan
+    namespace: "{{ openshift_serverless_subscription_namespace }}"
+  register: r_install_plan
+  retries: 30
+  delay: 5
+  until:
+    - r_install_plan.resources | length > 0
+    - r_install_plan.resources[0] | to_json | from_json | json_query(query) | length > 0
+  vars:
+    query: "spec.clusterServiceVersionNames[] | [?contains(@, 'serverless-operator') == `true`]"
+
+- name: manually approve installplan
+  when: not openshift_serverless_automatic_installplan_approval
+  block:
+    - name: set installplan name
+      set_fact:
+        openshift_serverless_install_plan: >-
+          {{ r_install_plan.resources | to_json | from_json | json_query(query) }}
+      vars:
+        query: >-
+          [?starts_with(spec.clusterServiceVersionNames[0], 'serverless-operator')].metadata.name|[0]
+
+    - name: approve installplan
+      k8s:
+        state: present
+        namespace: "{{ openshift_serverless_subscription_namespace }}"
+        definition: "{{ lookup( 'template', resource ) }}"
+      vars:
+        resource: "{{ resources_dir }}/installplan.j2"
+        install_plan_name: "{{ openshift_serverless_install_plan }}"
+
+- name: get installed csv
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: "{{ openshift_serverless_subscription_name }}"
+    namespace: "{{ openshift_serverless_subscription_namespace }}"
+  register: r_subscription
+  retries: 30
+  delay: 5
+  until:
+  - r_subscription.resources[0].status.currentCSV is defined
+  - r_subscription.resources[0].status.currentCSV | length > 0
+
+- name: wait until csv is installed
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    name: "{{ r_subscription.resources[0].status.currentCSV }}"
+    namespace: "{{ openshift_serverless_subscription_namespace }}"
+  register: r_csv
+  retries: 15
+  delay: 5
+  until:
+  - r_csv.resources[0].status.phase is defined
+  - r_csv.resources[0].status.phase | length > 0
+  - r_csv.resources[0].status.phase == "Succeeded"
+
+- name: install knative serving
+  when: openshift_serverless_install_serving | default(False) | bool
+  block:
+  - name: create knative-serving namespace and knative serving cr
+    k8s:
+      state: present
+      definition: "{{ lookup('file', item ) | from_yaml }}"
+    loop:
+    - "{{ resources_dir }}/knative-serving-ns.yml"
+    - "{{ resources_dir }}/knative-serving-cr.yml"
+
+  - name: wait until knative serving installation is complete
+    when: serverless_serving_wait_for_deploy | bool
+    k8s_info:
+      api_version: operator.knative.dev/v1alpha1
+      kind: KnativeServing
+      name: knative-serving
+      namespace: knative-serving
+    register: r_knativeserving
+    retries: 60
+    delay: 10
+    until:
+    - r_knativeserving.resources[0].status.conditions is defined
+    - r_knativeserving.resources[0].status.conditions | length > 0
+    - r_knativeserving.resources[0] | json_query(jmesquery) == ['True']
+    vars:
+      jmesquery: "status.conditions[?type == 'Ready'].status"
+
+- name: install knative eventing
+  when: openshift_serverless_install_eventing | default(False) | bool
+  block:
+  - name: create knative-eventing namespace and knative eventing cr
+    k8s:
+      state: present
+      definition: "{{ lookup('file', item ) | from_yaml }}"
+    loop:
+    - "{{ resources_dir }}/knative-eventing-ns.yml"
+    - "{{ resources_dir }}/knative-eventing-cr.yml"
+
+  - name: wait until knative eventing installation is complete
+    when: serverless_eventing_wait_for_deploy | bool
+    k8s_info:
+      api_version: operator.knative.dev/v1alpha1
+      kind: KnativeEventing
+      name: knative-eventing
+      namespace: knative-eventing
+    register: r_knativeeventing
+    retries: 60
+    delay: 10
+    until:
+    - r_knativeeventing.resources[0].status.conditions is defined
+    - r_knativeeventing.resources[0].status.conditions | length > 0
+    - r_knativeeventing.resources[0] | json_query(jmesquery) == ['True']
+    vars:
+      jmesquery: "status.conditions[?type == 'Ready'].status"

@@ -1,0 +1,9 @@
+[all:vars]
+
+openshift_serverless_subscription_channel=
+
+openshift_serverless_install_serving=True
+openshift_serverless_install_eventing=True
+
+serverless_serving_wait_for_deploy=True
+serverless_eventing_wait_for_deploy=True

@@ -1,0 +1,11 @@
+---
+
+openshift_serverless_packagemanifest: serverless-operator
+
+openshift_serverless_subscription_namespace: openshift-operators
+openshift_serverless_subscription_name: serverless-operator
+
+openshift_serverless_automatic_installplan_approval: false
+openshift_serverless_subscription_starting_csv: ""
+
+openshift_serverless_deployment_namespace: openshift-serverless
