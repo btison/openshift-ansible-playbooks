@@ -1,5 +1,28 @@
 ---
 
+- name: get packagemanifest for openshift pipelines operator
+  k8s_info:
+    api_version: packages.operators.coreos.com/v1
+    kind: PackageManifest
+    name: "{{ openshift_pipelines_packagemanifest }}"
+    namespace: openshift-marketplace
+  register: r_packagemanifest
+
+- name: set facts for openshift pipelines operator
+  set_fact:
+    openshift_pipelines_subscription_package_name: "{{ r_packagemanifest.resources[0].status.packageName }}"
+    openshift_pipelines_subscription_catalog_source: "{{ r_packagemanifest.resources[0].status.catalogSource }}"
+    openshift_pipelines_subscription_catalog_source_namespace: "{{ r_packagemanifest.resources[0].status.catalogSourceNamespace }}"
+
+- name: determine channel for openshift pipelines operator if no channel specified
+  when: openshift_pipelines_subscription_channel | default("") | length == 0
+  set_fact:
+    openshift_pipelines_subscription_channel: "{{ r_packagemanifest.resources[0].status.defaultChannel }}"
+
+- name: print openshift pipelines channel to be installed
+  debug:
+    msg: "OpenShift Pipelines operator channel to be installed: {{ openshift_pipelines_subscription_channel }}"
+
 - name: "create subscription for openshift pipelines operator in {{ openshift_pipelines_subscription_namespace }}"
   k8s:
     state: present

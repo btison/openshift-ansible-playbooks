@@ -41,10 +41,10 @@
 - name: remove subscription
   k8s:
     state: absent
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: "{{ openshift_pipelines_subscription_name }}"
     namespace: "{{ openshift_pipelines_subscription_namespace }}"
-    definition: "{{ lookup('template', resource ) | from_yaml }}"
-  vars:
-    resource: "{{ resources_dir }}/subscription.j2"
 
 - name: remove {{ openshift_pipelines_deployment_namespace }} project
   k8s:

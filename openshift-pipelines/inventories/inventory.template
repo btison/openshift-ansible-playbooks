@@ -1,0 +1,3 @@
+[all:vars]
+
+openshift_pipelines_subscription_channel=
