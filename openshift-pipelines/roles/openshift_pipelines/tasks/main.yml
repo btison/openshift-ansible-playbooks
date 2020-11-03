@@ -1,0 +1,84 @@
+---
+
+- name: "create subscription for openshift pipelines operator in {{ openshift_pipelines_subscription_namespace }}"
+  k8s:
+    state: present
+    namespace: "{{ openshift_pipelines_subscription_namespace }}"
+    definition: "{{ lookup('template', resource) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/subscription.j2"
+
+- name: wait until installplan is created
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: InstallPlan
+    namespace: "{{ openshift_pipelines_subscription_namespace }}"
+  register: r_install_plan
+  retries: 30
+  delay: 5
+  until:
+    - r_install_plan.resources | length > 0
+    - r_install_plan.resources[0] | to_json | from_json | json_query(query) | length > 0
+  vars:
+    query: "spec.clusterServiceVersionNames[] | [?contains(@, 'openshift-pipelines-operator') == `true`]"
+
+- name: manually approve installplan
+  when: not openshift_pipelines_automatic_installplan_approval
+  block:
+    - name: set installplan name
+      set_fact:
+        openshift_pipelines_install_plan: >-
+          {{ r_install_plan.resources | to_json | from_json | json_query(query) }}
+      vars:
+        query: >-
+          [?starts_with(spec.clusterServiceVersionNames[0], 'openshift-pipelines-operator')].metadata.name|[0]
+
+    - name: approve installplan
+      k8s:
+        state: present
+        namespace: "{{ openshift_pipelines_subscription_namespace }}"
+        definition: "{{ lookup( 'template', resource ) }}"
+      vars:
+        resource: "{{ resources_dir }}/installplan.j2"
+        install_plan_name: "{{ openshift_pipelines_install_plan }}"
+
+- name: get installed csv
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: "{{ openshift_pipelines_subscription_name }}"
+    namespace: "{{ openshift_pipelines_subscription_namespace }}"
+  register: r_subscription
+  retries: 30
+  delay: 5
+  until:
+  - r_subscription.resources[0].status.currentCSV is defined
+  - r_subscription.resources[0].status.currentCSV | length > 0
+
+- name: wait until csv is installed
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    name: "{{ r_subscription.resources[0].status.currentCSV }}"
+    namespace: "{{ openshift_pipelines_subscription_namespace }}"
+  register: r_csv
+  retries: 15
+  delay: 5
+  until:
+  - r_csv.resources[0].status.phase is defined
+  - r_csv.resources[0].status.phase | length > 0
+  - r_csv.resources[0].status.phase == "Succeeded"
+
+- name: wait until pipelines pods are ready
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ openshift_pipelines_deployment_namespace }}"
+    name: "{{ openshift_pipelines_deployment_name }}"
+  register: r_pipeline_controller_deployment
+  retries: 30
+  delay: 10
+  until:
+  - r_pipeline_controller_deployment.resources | length | int > 0
+  - r_pipeline_controller_deployment.resources[0].status.readyReplicas is defined
+  - r_pipeline_controller_deployment.resources[0].status.readyReplicas | int == r_pipeline_controller_deployment.resources[0].spec.replicas | int

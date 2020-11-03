@@ -1,0 +1,24 @@
+---
+
+- name: Deploy OpenShift Pipelines Operator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  run_once: true
+  vars_files:
+    - group_vars/openshift_pipelines.yml
+
+  tasks:
+    - include_role:
+        name: ../roles/openshift_pipelines
+      when: >
+        ACTION is not defined or
+        ACTION is none or
+        ACTION|trim() == "" or
+        ACTION|trim() == "install"
+    - include_role:
+        name: ../roles/openshift_pipelines
+        tasks_from: uninstall
+      when: >
+        ACTION is defined and
+        ACTION|trim() == "uninstall"

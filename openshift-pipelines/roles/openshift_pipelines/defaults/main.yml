@@ -1,0 +1,14 @@
+---
+
+openshift_pipelines_subscription_namespace: openshift-operators
+openshift_pipelines_subscription_name: openshift-pipelines-operator-rh
+
+openshift_pipelines_subscription_channel: preview
+openshift_pipelines_automatic_installplan_approval: false
+openshift_pipelines_subscription_package_name: openshift-pipelines-operator-rh
+openshift_pipelines_subscription_catalog_source: redhat-operators
+openshift_pipelines_subscription_catalog_source_namespace: openshift-marketplace
+openshift_pipelines_subscription_starting_csv: ""
+
+openshift_pipelines_deployment_namespace: openshift-pipelines
+openshift_pipelines_deployment_name: tekton-pipelines-controller
