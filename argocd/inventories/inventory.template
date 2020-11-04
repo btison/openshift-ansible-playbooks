@@ -1,0 +1,10 @@
+[all:vars]
+
+argocd_namespace=
+
+argocd_subscription_channel=
+
+argocd_operator_deploy_argocd=True
+argocd_wait_for_deploy=True
+
+argocd_remove_operator_group=True

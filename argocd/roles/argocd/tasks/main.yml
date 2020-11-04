@@ -1,0 +1,140 @@
+---
+
+- name: create operator group in {{ argocd_namespace }}
+  k8s:
+    state: present
+    namespace: "{{ argocd_namespace }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/operatorgroup.j2"
+    operator_group: "{{ argocd_operator_group }}"
+    operatorgroup_target_namespace: "{{ argocd_namespace }}"
+
+- name: get packagemanifest for argocd operator
+  k8s_info:
+    api_version: packages.operators.coreos.com/v1
+    kind: PackageManifest
+    name: "{{ argocd_packagemanifest }}"
+    namespace: openshift-marketplace
+  register: r_packagemanifest
+
+- name: set facts for argocd operator
+  set_fact:
+    argocd_subscription_package_name: "{{ r_packagemanifest.resources[0].status.packageName }}"
+    argocd_subscription_catalog_source: "{{ r_packagemanifest.resources[0].status.catalogSource }}"
+    argocd_subscription_catalog_source_namespace: "{{ r_packagemanifest.resources[0].status.catalogSourceNamespace }}"
+
+- name: determine channel for argocd operator if no channel specified
+  when: argocd_subscription_channel | default("") | length == 0
+  set_fact:
+    argocd_subscription_channel: "{{ r_packagemanifest.resources[0].status.defaultChannel }}"
+
+- name: print argocd channel to be installed
+  debug:
+    msg: "Argo CD operator channel to be installed: {{ argocd_subscription_channel }}"
+
+- name: "create subscription for argocd operator in {{ argocd_subscription_namespace }}"
+  k8s:
+    state: present
+    namespace: "{{ argocd_subscription_namespace }}"
+    definition: "{{ lookup('template', resource) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/subscription.j2"
+    subscription_name: "{{ argocd_subscription_name }}"
+    subscription_channel: "{{ argocd_subscription_channel }}"
+    automatic_installplan_approval: "{{ argocd_automatic_installplan_approval }}"
+    subscription_package_name: "{{ argocd_subscription_package_name }}"
+    subscription_catalog_source: "{{ argocd_subscription_catalog_source }}"
+    subscription_catalog_source_namespace: "{{ argocd_subscription_catalog_source_namespace }}"
+    subscription_starting_csv: "{{ argocd_subscription_starting_csv }}"
+
+- name: wait until installplan is created
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: InstallPlan
+    namespace: "{{ argocd_subscription_namespace }}"
+  register: r_install_plan
+  retries: 30
+  delay: 5
+  until:
+    - r_install_plan.resources | length > 0
+    - r_install_plan.resources[0] | to_json | from_json | json_query(query) | length > 0
+  vars:
+    query: "spec.clusterServiceVersionNames[] | [?contains(@, 'argocd-operator') == `true`]"
+
+- name: manually approve installplan
+  when: not argocd_automatic_installplan_approval
+  block:
+    - name: set installplan name
+      set_fact:
+        argocd_install_plan: >-
+          {{ r_install_plan.resources | to_json | from_json | json_query(query) }}
+      vars:
+        query: >-
+          [?starts_with(spec.clusterServiceVersionNames[0], 'argocd-operator')].metadata.name|[0]
+
+    - name: approve installplan
+      k8s:
+        state: present
+        namespace: "{{ argocd_subscription_namespace }}"
+        definition: "{{ lookup( 'template', resource ) }}"
+      vars:
+        resource: "{{ resources_dir }}/installplan.j2"
+        install_plan_name: "{{ argocd_install_plan }}"
+
+- name: get installed csv
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: "{{ argocd_subscription_name }}"
+    namespace: "{{ argocd_subscription_namespace }}"
+  register: r_subscription
+  retries: 30
+  delay: 5
+  until:
+  - r_subscription.resources[0].status.currentCSV is defined
+  - r_subscription.resources[0].status.currentCSV | length > 0
+
+- name: wait until csv is installed
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    name: "{{ r_subscription.resources[0].status.currentCSV }}"
+    namespace: "{{ argocd_subscription_namespace }}"
+  register: r_csv
+  retries: 15
+  delay: 5
+  until:
+  - r_csv.resources[0].status.phase is defined
+  - r_csv.resources[0].status.phase | length > 0
+  - r_csv.resources[0].status.phase == "Succeeded"
+
+- name: install argocd cr
+  when: argocd_operator_deploy_argocd | default(False) | bool
+  block:
+  - name: create argocd cr
+    k8s:
+      state: present
+      namespace: "{{ argocd_namespace }}"
+      definition: "{{ lookup('template', resource ) | from_yaml }}"
+    vars:
+      resource: "{{ resources_dir }}/argocd-cr.j2"
+
+  - name: wait until argocd installation is complete
+    k8s_info:
+      api_version: argoproj.io/v1alpha1
+      kind: ArgoCD
+      name: "{{ argocd_cr_name }}"
+      namespace: "{{ argocd_namespace }}"
+    register: r_argocd_install_status
+    retries: 30
+    delay: 10
+    until:
+    - r_argocd_install_status is defined
+    - r_argocd_install_status.resources is defined
+    - r_argocd_install_status.resources[0] is defined
+    - r_argocd_install_status.resources[0].status is defined
+    - r_argocd_install_status.resources[0].status.phase is defined
+    - r_argocd_install_status.resources[0].status.server is defined
+    - r_argocd_install_status.resources[0].status.phase == "Available"
+    - r_argocd_install_status.resources[0].status.server == "Running"

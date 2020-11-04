@@ -1,0 +1,13 @@
+---
+
+argocd_operator_group: "{{ argocd_namespace }}"
+
+argocd_packagemanifest: argocd-operator
+
+argocd_subscription_namespace: "{{ argocd_namespace }}"
+argocd_subscription_name: argocd-operator
+
+argocd_automatic_installplan_approval: false
+argocd_subscription_starting_csv: ""
+
+argocd_cr_name: argocd
