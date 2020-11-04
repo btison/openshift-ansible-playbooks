@@ -1,0 +1,1 @@
+Collection of Ansible playbooks to install products and solutions on Openshift.
