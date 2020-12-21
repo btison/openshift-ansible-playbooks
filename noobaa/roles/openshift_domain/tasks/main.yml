@@ -1,0 +1,15 @@
+---
+
+- name: "get route definition"
+  k8s_info:
+    api_version: route.openshift.io/v1
+    kind: Route
+    namespace: openshift-console
+    field_selectors:
+      - spec.to.name=console
+  register: r_console_route
+
+- name: set ocp_domain fact
+  set_fact: 
+    ocp_domain: "{{ r_console_route.resources[0].spec.host | regex_replace('^[a-zA-Z0-9-]+\\.(.*?)$', '\\1') }}"
+

@@ -1,0 +1,103 @@
+---
+
+- name: "delete noobaa bucket"
+  k8s:
+    state: absent
+    api_version: objectbucket.io/v1alpha1
+    kind: ObjectBucketClaim
+    namespace: "{{ noobaa_namespace }}"
+    name: "{{ noobaa_bucket_name }}-claim"
+
+- name: "delete noobaa custom resource"
+  k8s:
+    state: absent
+    api_version: noobaa.io/v1alpha1
+    kind: noobaa
+    namespace: "{{ noobaa_namespace }}"
+    name: "{{ noobaa_resource_name }}"
+
+- name: "get subscription"
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: "{{ noobaa_subscription_name }}"
+    namespace: "{{ noobaa_subscription_namespace }}"
+  register: r_subscription
+
+- name: "remove csv"
+  k8s:
+    state: absent
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    name: "{{ r_subscription.resources[0].status.currentCSV }}"
+    namespace: "{{ noobaa_subscription_namespace }}"
+  when:
+    - r_subscription.resources | length > 0
+    - r_subscription.resources[0].status.currentCSV is defined
+    - r_subscription.resources[0].status.currentCSV | length > 0
+
+- name: "remove subscription"
+  k8s:
+    state: absent
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: "{{ noobaa_subscription_name }}"
+    namespace: "{{ noobaa_subscription_namespace }}"
+
+- name: "find installplans"
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: InstallPlan
+    namespace: "{{ noobaa_subscription_namespace }}"
+  register: r_install_plans
+
+- name: "set installplan name"
+  when: r_install_plans.resources | length > 0
+  set_fact:
+    noobaa_install_plan: "{{ r_install_plans.resources | to_json | from_json | json_query(query) }}"
+  vars:
+    query: >-
+      [?starts_with(spec.clusterServiceVersionNames[0], 'noobaa-operator')].metadata.name|[0]
+
+- name: "remove installplan"
+  when:
+    - noobaa_install_plan is defined
+    - noobaa_install_plan | default("") | length > 0
+  k8s:
+    state: absent
+    api_version: operators.coreos.com/v1alpha1
+    kind: InstallPlan
+    name: "{{ noobaa_install_plan }}"
+    namespace: "{{ noobaa_subscription_namespace }}"
+
+- name: "remove operatorgroup"
+  when: noobaa_remove_operator_group | default(False) | bool
+  k8s:
+    state: absent
+    api_version: operators.coreos.com/v1
+    kind: OperatorGroup
+    name: "{{ noobaa_operator_group }}"
+    namespace: "{{ noobaa_namespace }}"
+
+- name: "remove noobaa crds"
+  when: noobaa_remove_cluster_resources | default(False) | bool
+  k8s:
+    state: absent
+    api_version: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    name: "{{ item }}"
+  loop:
+    - "backingstores.noobaa.io"
+    - "bucketclasses.noobaa.io"
+    - "noobaas.noobaa.io"
+
+- name: "delete operatorhubio-catalog catalog source"
+  when: noobaa_remove_cluster_resources | default(False) | bool
+  k8s:
+    state: absent
+    api_version: operators.coreos.com/v1alpha1
+    kind: catalogsource
+    namespace: openshift-marketplace
+    name: operatorhubio-catalog
+  vars:
+    resource: "{{ resources_dir }}/operatorhubio-catalog.yml"

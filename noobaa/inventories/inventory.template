@@ -1,0 +1,3 @@
+[all:vars]
+
+noobaa_remove_cluster_resources=false

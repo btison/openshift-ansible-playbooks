@@ -1,0 +1,18 @@
+---
+
+noobaa_operator_group: "{{ noobaa_namespace }}"
+
+noobaa_packagemanifest: noobaa-operator
+
+noobaa_subscription_namespace: "{{ noobaa_namespace }}"
+noobaa_subscription_name: noobaa-operator
+
+noobaa_automatic_installplan_approval: false
+noobaa_subscription_starting_csv: ""
+
+noobaa_operator_deployment: noobaa-operator
+
+noobaa_resource_name: noobaa
+
+noobaa_bucket_name: local-s3-bucket
+noobaa_storage_class_name: "{{ noobaa_namespace }}.noobaa.io"

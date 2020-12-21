@@ -1,0 +1,8 @@
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: {{ noobaa_bucket_name }}-claim
+spec:
+  storageClassName: {{ noobaa_storage_class_name }}
+  bucketName: {{ noobaa_bucket_name }}
+  additionalConfig: {}
