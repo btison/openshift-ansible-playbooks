@@ -1,0 +1,26 @@
+---
+
+- name: "check if image pull secret exists"
+  k8s_info:
+    api_version: v1
+    kind: secret
+    namespace: "{{ pull_secret_namespace }}"
+    name: "{{ pull_secret_name }}"
+  register: r_image_pull_secret
+
+- name: "create image pull secret from pull secret in openshift-config"
+  when: 
+    - pull_secret_type | default("openshift-config")  == "openshift-config"
+    - r_image_pull_secret.resources | length == 0
+  shell: "{{ openshift_cli }} get secret pull-secret -n openshift-config -o yaml | sed 's/namespace: openshift-config/namespace: {{ pull_secret_namespace }}/' | sed 's/pull-secret/{{ pull_secret_name }}/' | oc create -n {{ pull_secret_namespace }} -f -"
+
+- name: "create image pull secret from token user and password"
+  when: 
+    - pull_secret_type | default("openshift-config")  != "openshift-config"  
+    - r_image_pull_secret.resources | length == 0 
+  shell: |
+    {{ openshift_cli }} create secret docker-registry {{ pull_secret_name }} \
+        --docker-server=registry.redhat.io \
+        --docker-username='{{ redhat_registry_token_user }}' \
+        --docker-password='{{ redhat_registry_token_password }}' \
+        -n {{ pull_secret_namespace }}

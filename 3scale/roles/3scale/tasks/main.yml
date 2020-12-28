@@ -1,0 +1,145 @@
+---
+
+- name: "create namespace for 3scale operator"
+  k8s:
+    state: present
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/namespace.j2"
+    namespace: "{{ threescale_namespace }}"
+    namespace_description: ""
+    namespace_display_name: ""
+
+- name: "create operatorgroup in {{ threescale_namespace }}"
+  import_role:
+    name: operatorgroup
+  vars:
+    operatorgroup_namespace: "{{ threescale_namespace }}"
+    operatorgroup_name: "{{ threescale_operatorgroup }}"
+    operatorgroup_target_namespace: "{{ threescale_namespace }}"
+
+- name: "deploy 3scale operator in {{ threescale_namespace }}"
+  import_role:
+    name: openshift_operator
+  vars:
+    operator_name: 3scale-operator
+    packagemanifest: "{{ threescale_packagemanifest }}"
+    subscription_channel: "{{ threescale_subscription_channel }}"
+    subscription_namespace: "{{ threescale_subscription_namespace }}" 
+    subscription_name: "{{ threescale_subscription_name }}"
+    automatic_installplan_approval: "{{ threescale_automatic_installplan_approval }}"
+    subscription_starting_csv: "{{ threescale_subscription_starting_csv }}"
+    csv_prefix: "{{ threescale_csv_prefix }}"
+
+- name: "wait for 3scale operator to be ready"
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ threescale_subscription_namespace }}"
+    name: "{{ threescale_operator_deployment }}"
+  register: r_threescale_operator_deployment
+  retries: 20
+  delay: 10
+  until:
+  - r_threescale_operator_deployment.resources is defined
+  - r_threescale_operator_deployment.resources | length | int > 0
+  - r_threescale_operator_deployment.resources[0].status.availableReplicas is defined
+  - r_threescale_operator_deployment.resources[0].status.availableReplicas | int == r_threescale_operator_deployment.resources[0].spec.replicas | int
+
+- name: "create 3scale AWS S3 Secret"
+  when: threescale_file_storage | default("")  == "s3"
+  k8s:
+    state: present
+    namespace: "{{ threescale_namespace }}"
+    definition: "{{ lookup( 'template', resource ) }}"
+  vars:
+    resource: "{{ resources_dir }}/aws-auth.j2"
+
+- name: "create 3scale Noobaa S3 Secret"
+  when: threescale_file_storage | default("")  == "noobaa"
+  k8s:
+    state: present
+    namespace: "{{ threescale_namespace }}"
+    definition: "{{ lookup( 'template', resource ) }}"
+  vars:
+    resource: "{{ resources_dir }}/aws-auth-noobaa.j2"
+
+- name: "create 3scale system-smtp secret"
+  k8s:
+    state: present
+    namespace: "{{ threescale_namespace }}"
+    definition: "{{ lookup( 'template', resource ) }}"
+  vars:
+    resource: "{{ resources_dir }}/system-smtp.j2"
+
+- name: "set facts for system seed secret"
+  set_fact:
+    threescale_admin_access_token: "{{ lookup('password', '/dev/null chars=ascii_letters length=16') }}"
+    threescale_admin_password: "{{ lookup('password', '/dev/null chars=ascii_letters length=8') }}"
+    threescale_master_access_token: "{{ lookup('password', '/dev/null chars=ascii_letters length=8') }}"
+    threescale_master_password: "{{ lookup('password', '/dev/null chars=ascii_letters length=8') }}"
+
+- name: "check if system seed secret exists"
+  k8s_info:
+    api_version: v1
+    kind: secret
+    namespace: "{{ threescale_namespace }}"
+    name: system-seed
+  register: r_system_seed_secret
+
+- name: "create 3scale system-seed secret"
+  when:
+    - r_system_seed_secret.resources | length == 0
+    - threescale_create_system_seed_secret is defined 
+    - threescale_create_system_seed_secret | bool == true
+  k8s:
+    state: present
+    namespace: "{{ threescale_namespace }}"
+    definition: "{{ lookup( 'template', resource ) }}"
+  vars:
+    resource: "{{ resources_dir }}/system-seed.j2"
+
+- name: "create image pull secret in {{ threescale_namespace }}"
+  import_role:
+    name: image_pull_secret
+  vars:
+    pull_secret_namespace: "{{ threescale_namespace }}" 
+    pull_secret_name: threescale-registry-auth
+    pull_secret_type: "{{ threescale_image_pull_secret }}"
+    redhat_registry_token_user: "{{ threescale_redhat_registry_token_user }}"
+    redhat_registry_token_password: "{{ threescale_redhat_registry_token_password }}"
+
+- name: "create system storage pvc"
+  when: threescale_file_storage | default("")  == "rwo"
+  k8s:
+    state: present
+    namespace: "{{ threescale_namespace }}"
+    definition: "{{ lookup( 'template', resource ) }}"
+  vars:
+    resource: "{{ resources_dir }}/system-storage.j2"
+
+- name: "create 3scale api manager"
+  k8s:
+    state: present
+    namespace: "{{ threescale_namespace }}"
+    definition: "{{ lookup( 'template', resource ) }}"
+  vars:
+    resource: "{{ resources_dir }}/apimanager.j2"
+
+# wait to APIManager resource creation
+- name: "wait for 3scale pods to be ready"
+  k8s_info:
+    api_version: apps.openshift.io/v1
+    kind: DeploymentConfig
+    namespace: "{{ threescale_namespace }}"
+    name: apicast-production
+  register: r_dc
+  until:
+    - r_dc is defined
+    - r_dc.resources is defined
+    - r_dc.resources | list | length > 0
+    - r_dc.resources[0].status is defined
+    - r_dc.resources[0].status.readyReplicas is defined
+    - r_dc.resources[0].status.readyReplicas | int >= 1
+  retries: 60
+  delay: 15

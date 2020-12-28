@@ -1,0 +1,58 @@
+---
+
+# wait to APIManager resource creation
+- name: "wait for 3scale pods to be ready"
+  k8s_info:
+    api_version: apps.openshift.io/v1
+    kind: DeploymentConfig
+    namespace: "{{ threescale_namespace }}"
+    name: apicast-production
+  register: r_dc
+  until:
+    - r_dc is defined
+    - r_dc.resources is defined
+    - r_dc.resources | list | length > 0
+    - r_dc.resources[0].status is defined
+    - r_dc.resources[0].status.readyReplicas is defined
+    - r_dc.resources[0].status.readyReplicas | int >= 1
+  retries: 60
+  delay: 15
+
+- name: "get the system seed secret"
+  k8s_info:
+    api_version: v1
+    kind: secret
+    namespace: "{{ threescale_namespace }}"
+    name: system-seed
+  register: r_system_seed_secret
+
+- name: "get facts from system-seed secret"
+  set_fact:
+    master_access_token: "{{ r_system_seed_secret.resources[0].data.MASTER_ACCESS_TOKEN | b64decode }}"
+    master_password: "{{ r_system_seed_secret.resources[0].data.MASTER_PASSWORD | b64decode }}"
+    admin_password: "{{ r_system_seed_secret.resources[0].data.ADMIN_PASSWORD | b64decode }}"
+    master_domain: "{{ r_system_seed_secret.resources[0].data.MASTER_DOMAIN | b64decode }}"
+
+- name: "set facts for tenant creation"
+  set_fact:
+    system_master_url: "https://{{ master_domain }}.{{ ocp_domain}}"
+    end_tenant: "{{ threescale_number_of_tenants }}"
+
+- name: "wait until the master route is available"
+  k8s_info:
+    api_version: route.openshift.io/v1
+    kind: route
+    namespace: "{{ threescale_namespace }}"
+    field_selectors:
+      - "spec.host={{ master_domain }}.{{ ocp_domain}}"
+  retries: 60
+  delay: 15
+  register: r_master_domain_route
+  until:
+    - r_master_domain_route is defined
+    - r_master_domain_route.resources | list | length > 0
+  
+- name: "create {{ threescale_number_of_tenants }} tenants"
+  include_tasks: 
+    file: tenant_loop.yml
+  loop: "{{ range(1, end_tenant|int + 1, 1)|list }}"

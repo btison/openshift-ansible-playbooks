@@ -1,0 +1,16 @@
+apiVersion: capabilities.3scale.net/v1alpha1
+kind: Tenant
+metadata:
+  name: "{{ org_name }}"
+spec:
+  email: "{{ tenant_admin_email }}"
+  masterCredentialsRef:
+    name: system-seed
+  organizationName: "{{ org_name }}"
+  passwordCredentialsRef:
+    name: "{{ org_name }}-admin-secret"
+  systemMasterUrl: "{{ system_master_url }}"
+  tenantSecretRef:
+    name: "{{ org_name }}-tenant-secret"
+    namespace: "{{ threescale_namespace }}"
+  username: "{{ tenant_admin_id }}"

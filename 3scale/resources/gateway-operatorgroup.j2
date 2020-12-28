@@ -1,0 +1,8 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: "{{tenant_gw_project }}-apicast-operator"
+  namespace: "{{ tenant_gw_project }}"
+spec:
+  targetNamespaces:
+  -  "{{ tenant_gw_project }}"

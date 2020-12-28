@@ -1,0 +1,15 @@
+apiVersion: apps.3scale.net/v1alpha1
+kind: APIManager
+metadata:
+  name: "{{ threescale_api_manager_name }}"
+spec:
+  tenantName: {{ threescale_tenant_name }}
+  wildcardDomain: "{{ ocp_domain }}"
+  resourceRequirementsEnabled: false
+{% if threescale_file_storage | default("rwo") != "rwo" %} 
+  system:
+    fileStorage:
+      simpleStorageService:
+        configurationSecretRef:
+          name: {{ threescale_object_storage_secret }}
+{% endif %}

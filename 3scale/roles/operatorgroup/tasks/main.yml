@@ -1,0 +1,9 @@
+---
+
+- name: "create operator group in {{ operatorgroup_namespace }}"
+  k8s:
+    state: present
+    namespace: "{{ operatorgroup_namespace }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/operatorgroup.j2"

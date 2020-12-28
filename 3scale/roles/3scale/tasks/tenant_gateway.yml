@@ -1,0 +1,126 @@
+---
+
+- name: "create namespace for the tenant api gateway"
+  k8s:
+    state: present
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/namespace.j2"
+    namespace: "{{ tenant_gw_project }}"
+    namespace_description: ""
+    namespace_display_name: "{{ tenant_gw_project_display }}"
+
+- name: "give user {{ ocp_admin_id }} admin privileges in namespace"
+  k8s:
+    state: present
+    namespace: "{{ tenant_gw_project }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/namespace-admin-rb.j2"
+    ocp_username: "{{ ocp_admin_id }}"
+
+- name: "create image pull secret in {{ threescale_namespace }}"
+  import_role:
+    name: image_pull_secret
+  vars:
+    pull_secret_namespace: "{{ tenant_gw_project }}" 
+    pull_secret_name: threescale-registry-auth
+    pull_secret_type: "{{ threescale_image_pull_secret }}"
+    redhat_registry_token_user: "{{ threescale_redhat_registry_token_user }}"
+    redhat_registry_token_password: "{{ threescale_redhat_registry_token_password }}"
+
+- name: "create operatorgroup in {{ threescale_namespace }}"
+  import_role:
+    name: operatorgroup
+  vars:
+    operatorgroup_namespace: "{{ tenant_gw_project }}"
+    operatorgroup_name: "{{ threescale_operatorgroup }}"
+    operatorgroup_target_namespace: "{{ tenant_gw_project }}"
+
+- name: "deploy apicast operator in {{ tenant_gw_project }} namespace"
+  import_role:
+    name: openshift_operator
+  vars:
+    operator_name: apicast-operator
+    packagemanifest: "{{ threescale_apicast_packagemanifest }}"
+    subscription_channel: "{{ threescale_apicast_subscription_channel }}"
+    subscription_namespace: "{{ tenant_gw_project }}"
+    subscription_name: "{{ threescale_apicast_subscription_name }}"
+    automatic_installplan_approval: "{{ threescale_apicast_automatic_installplan_approval }}"
+    subscription_starting_csv: "{{ threescale_apicast_subscription_starting_csv }}"
+    csv_prefix: "{{ threescale_apicast_csv_prefix }}"
+
+- name: "wait for 3scale apicast operator to be ready"
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ tenant_gw_project  }}"
+    name: "{{ threescale_apicast_operator_deployment }}"
+  register: r_threescale_apicast_operator_deployment
+  retries: 20
+  delay: 10
+  until:
+  - r_threescale_apicast_operator_deployment.resources is defined
+  - r_threescale_apicast_operator_deployment.resources | length | int > 0
+  - r_threescale_apicast_operator_deployment.resources[0].status.availableReplicas is defined
+  - r_threescale_apicast_operator_deployment.resources[0].status.availableReplicas | int == r_threescale_apicast_operator_deployment.resources[0].spec.replicas | int
+
+- name: "get the {{ ocp_admin_id }} tenant secret"
+  k8s_info:
+    api_version: v1
+    kind: secret
+    namespace: "{{ threescale_namespace }}"
+    name: "{{ org_name }}-tenant-secret"
+  retries: 30
+  delay: 5
+  register: r_tenant_secret
+  until:
+    - r_tenant_secret.resources | length > 0
+
+- set_fact:
+    tenant_access_token: "{{ r_tenant_secret.resources[0].data.token | b64decode }}"
+
+- set_fact:
+    threescale_portal_endpoint: "https://{{ tenant_access_token }}@{{ org_name }}-admin.{{ ocp_domain }}"
+
+- name: "create threescale-portal-endpoint-stage secret in {{ tenant_gw_project }}"
+  k8s:
+    state: present
+    namespace: "{{ tenant_gw_project }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/apicast-configuration-url-secret.j2"
+    apicast_configuration_url_secret: apicast-configuration-url-secret-stage
+
+- name: "create threescale-portal-endpoint-prod secret in {{ tenant_gw_project }}"
+  k8s:
+    state: present
+    namespace: "{{ tenant_gw_project }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/apicast-configuration-url-secret.j2"
+    apicast_configuration_url_secret: apicast-configuration-url-secret-prod
+
+- name: "create stage apicast for tenant {{ org_name }}"
+  k8s:
+    state: present
+    namespace: '{{ tenant_gw_project  }}'
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir}}/apicast.j2"
+    threescale_apicast_name: stage-apicast
+    threescale_apicast_configuration_url_secret: apicast-configuration-url-secret-stage
+    threescale_apicast_configuration_load_mode: lazy
+    threescale_apicast_deployment_environment: sandbox
+
+- name: "create prod apicast for tenant {{ org_name }}"
+  k8s:
+    state: present
+    namespace: '{{ tenant_gw_project  }}'
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir}}/apicast.j2"
+    threescale_apicast_name: prod-apicast
+    threescale_apicast_configuration_url_secret: apicast-configuration-url-secret-prod
+    threescale_apicast_configuration_load_mode: boot
+    threescale_apicast_deployment_environment: production

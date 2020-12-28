@@ -1,0 +1,10 @@
+apiVersion: apps.3scale.net/v1alpha1
+kind: APIcast
+metadata:
+  name: {{ threescale_apicast_name }}
+spec:
+  adminPortalCredentialsRef:
+    name: {{ threescale_apicast_configuration_url_secret }}
+  replicas: 1
+  configurationLoadMode: {{ threescale_apicast_configuration_load_mode }}
+  deploymentEnvironment: {{ threescale_apicast_deployment_environment }}

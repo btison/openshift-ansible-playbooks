@@ -1,0 +1,31 @@
+---
+
+# Name of ocp user that is an admin to the project where 3scale resources reside
+- set_fact:
+    ocp_admin_id: "{{ ocp_user_name_base }}{{ item }}"
+    tenant_admin_id: "{{ tenant_admin_name_base }}{{ item }}"
+
+- set_fact:
+    org_name: "{{ ocp_admin_id }}-{{ threescale_tenant_org_name_base }}"
+    tenant_gw_project: "{{ ocp_admin_id }}-{{ threescale_tenant_gw_namespace_base }}-gw"
+    tenant_gw_project_display: "{{ ocp_admin_id }} APICast Gateways Project"
+    tenant_admin_email: "{{ admin_email_user }}+{{ ocp_admin_id }}@{{ admin_email_domain }}"
+
+- name: "create the {{ org_name }} tenant CR"
+  k8s:
+    state: present
+    namespace: "{{ threescale_namespace }}"
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  loop:
+    - "{{ resources_dir }}/tenant-admin-secret.j2"
+    - "{{ resources_dir }}/tenant.j2"
+  loop_control:
+    loop_var: resource
+
+- import_tasks: tenant_gateway.yml
+  when: 
+    - threescale_create_gws_with_each_tenant is defined 
+    - threescale_create_gws_with_each_tenant | bool == true

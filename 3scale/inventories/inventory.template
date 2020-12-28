@@ -1,0 +1,59 @@
+[all:vars]
+
+openshift_cli=oc
+
+threescale_namespace=
+
+threescale_subscription_channel=
+
+threescale_remove_operator_group=true
+threescale_remove_cluster_resources=false
+
+# system seed
+threescale_create_system_seed_secret=true
+threescale_master_domain=3scale-master
+threescale_tenant_name=3scale
+threescale_admin_email=
+
+# supported: noobaa, s3, rwo
+threescale_file_storage=noobaa
+
+# s3
+threescale_api_aws_key=
+threescale_api_aws_secret=
+threescale_api_aws_bucket=
+threescale_api_aws_region=
+
+# noobaa
+threescale_noobaa_aws_key=
+threescale_noobaa_aws_secret=
+threescale_noobaa_bucket_name=local-s3-bucket
+threescale_noobaa_region=local-s3-region
+threescale_namespace_noobaa_operator=
+
+# smtp
+threescale_smtp_host=
+threescale_smtp_authentication=
+threescale_smtp_domain=
+threescale_smtp_passwd=
+threescale_smtp_port=
+threescale_smtp_userid=
+
+# supported: openshift-config, namespace
+threescale_image_pull_secret=openshift-config
+threescale_redhat_registry_token_user=
+threescale_redhat_service_token_password=
+
+# tenants
+threescale_create_tenants=true
+threescale_number_of_tenants=10
+tenant_admin_name_base=api
+ocp_user_name_base=user
+tenant_admin_password=admin
+threescale_tenant_org_name_base=3scale
+threescale_create_gws_with_each_tenant=true
+admin_email_user=
+admin_email_domain=
+
+# apicast
+threescale_apicast_subscription_channel=

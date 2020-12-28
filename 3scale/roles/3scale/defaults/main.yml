@@ -1,0 +1,32 @@
+---
+
+threescale_operatorgroup: "{{ threescale_namespace }}"
+
+threescale_packagemanifest: 3scale-operator
+
+threescale_subscription_namespace: "{{ threescale_namespace }}"
+threescale_subscription_name: 3scale-operator
+
+threescale_automatic_installplan_approval: false
+threescale_subscription_starting_csv: ""
+threescale_csv_prefix: 3scale-operator
+
+threescale_operator_deployment: 3scale-operator
+
+threescale_object_storage_secret: aws-auth
+threescale_system_storage_size: 1Gi
+
+threescale_api_manager_name: 3scale-apimanager
+threescale_admin_userid: admin
+threescale_master_userid: master
+
+threescale_apicast_packagemanifest: apicast-operator
+threescale_apicast_subscription_name: apicast-operator
+threescale_apicast_csv_prefix: apicast-operator
+
+threescale_apicast_automatic_installplan_approval: false
+threescale_apicast_subscription_starting_csv: ""
+
+threescale_apicast_operator_deployment: apicast-operator
+
+threescale_tenant_gw_namespace_base: "{{ threescale_namespace }}"

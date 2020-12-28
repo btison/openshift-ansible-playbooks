@@ -1,0 +1,12 @@
+---
+
+dependencies:
+  - role: openshift_domain
+    when: >
+      ACTION is not defined or
+      ACTION is none or
+      ACTION|trim() == "" or
+      ACTION|trim() == "install" or
+      ACTION|trim() == "create_tenants"
+    vars:
+      route_namespace: default

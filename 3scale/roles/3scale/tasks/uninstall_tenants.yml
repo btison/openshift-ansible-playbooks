@@ -1,0 +1,79 @@
+---
+
+- debug:
+    msg: "deleting tenant {{ item }}"
+
+- set_fact:
+    org_name: "{{ ocp_user_name_base }}{{ item }}-{{ threescale_tenant_org_name_base }}"
+    tenant_gw_project: "{{ ocp_user_name_base }}{{ item }}-{{ threescale_tenant_gw_namespace_base }}-gw"
+
+- name: "delete stage apicast for tenant {{ org_name }}"
+  k8s:
+    state: absent
+    api_version: apps.3scale.net/v1alpha1
+    kind: apicast
+    namespace: '{{ tenant_gw_project }}'
+    name: stage-apicast
+
+- name: "delete prod apicast for tenant {{ org_name }}"
+  k8s:
+    state: absent
+    api_version: apps.3scale.net/v1alpha1
+    kind: apicast
+    namespace: '{{ tenant_gw_project }}'
+    name: prod-apicast
+
+- name: "delete threescale-portal-endpoint secrets in {{ tenant_gw_project }}"
+  k8s:
+    state: absent
+    api_version: v1
+    kind: secret
+    namespace: "{{ tenant_gw_project }}"
+    name: "{{ secret }}"
+  loop:
+    - apicast-configuration-url-secret-stage
+    - apicast-configuration-url-secret-prod
+  loop_control:
+    loop_var: secret
+
+- name: "delete apicast operator in {{ tenant_gw_project }} namespace"
+  import_role:
+    name: openshift_operator
+    tasks_from: uninstall
+  vars:
+    operator_name: apicast-operator
+    subscription_namespace: "{{ tenant_gw_project }}"
+    subscription_name: "{{ threescale_apicast_subscription_name }}"
+    csv_prefix: "{{ threescale_apicast_csv_prefix }}"
+
+- name: "remove operatorgroup"
+  when: threescale_remove_operator_group | default(False) | bool
+  k8s:
+    state: absent
+    api_version: operators.coreos.com/v1
+    kind: OperatorGroup
+    name: "{{ threescale_operatorgroup }}"
+    namespace: "{{ tenant_gw_project }}"
+
+- name: "remove apicast namespace for tenant {{ org_name }} "
+  k8s:
+    state: absent
+    api_version: v1
+    kind: namespace
+    name: "{{ tenant_gw_project }}"
+
+- name: "remove tenant cr for tenant {{ org_name }}"
+  k8s:
+    state: absent
+    api_version: capabilities.3scale.net/v1alpha1
+    kind: tenant
+    namespace: "{{ threescale_namespace }}"
+    name: "{{ org_name }}"
+
+- name: "remove tenant admin secret for tenant {{ org_name }}"
+  k8s:
+    state: absent
+    api_version: v1
+    kind: secret
+    namespace: "{{ threescale_namespace }}"
+    name: "{{ org_name }}-admin-secret"

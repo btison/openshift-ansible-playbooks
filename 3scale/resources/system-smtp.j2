@@ -1,0 +1,17 @@
+kind: Secret
+apiVersion: v1
+metadata:
+  name: system-smtp
+  labels:
+    app: 3scale-api-management
+    threescale_component: system
+    threescale_component_element: smtp
+type: Opaque    
+stringData:
+  address: "{{ threescale_smtp_host }}"
+  authentication: "{{ threescale_smtp_authentication }}"
+  domain: "{{ threescale_smtp_domain}}"
+  openssl.verify.mode: 'false'
+  password: "{{ threescale_smtp_passwd }}"
+  port: "{{ threescale_smtp_port }}"
+  username: "{{ threescale_smtp_userid }}"
