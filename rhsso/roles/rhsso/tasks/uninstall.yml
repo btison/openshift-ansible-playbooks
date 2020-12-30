@@ -1,0 +1,44 @@
+---
+
+- name: "delete keycloak custom resource"
+  k8s:
+    state: absent
+    api_version: keycloak.org/v1alpha1
+    kind: keycloak
+    namespace: "{{ rhsso_namespace }}"
+    name: "{{ rhsso_cr_name }}"
+
+- name: "delete keycloak route"
+  k8s:
+    state: absent
+    api_version: route.openshift.io/v1
+    kind: route
+    namespace: "{{ rhsso_namespace }}"
+    name: "{{ rhsso_route_name }}"
+
+- name: "delete rhsso operator in {{ rhsso_namespace }}"
+  import_role:
+    name: openshift_operator
+    tasks_from: uninstall
+  vars:
+    operator_name: rhsso-operator
+    subscription_namespace: "{{ rhsso_namespace }}" 
+    subscription_name: "{{ rhsso_operator_subscription_name }}"
+    csv_prefix: "{{ rhsso_operator_csv_prefix }}"
+
+- name: "delete operatorgroup in {{ rhsso_namespace }}"
+  when: rhsso_remove_operator_group | default(False) | bool
+  import_role:
+    name: operatorgroup
+    tasks_from: uninstall
+  vars:
+    operatorgroup_namespace: "{{ rhsso_namespace }}"
+    operatorgroup_name: "{{ rhsso_operatorgroup }}"
+
+- name: "delete namespace for rhsso operator"
+  when: rhsso_remove_namespace | default(False) | bool
+  import_role:
+    name: openshift_namespace
+    tasks_from: uninstall
+  vars:
+    namespace: "{{ rhsso_namespace }}"

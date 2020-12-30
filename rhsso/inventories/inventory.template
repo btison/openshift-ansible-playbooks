@@ -1,0 +1,13 @@
+[all:vars]
+
+rhsso_namespace=
+
+rhsso_remove_operator_group=True
+rhsso_remove_namespace=True
+
+rhsso_profile=RHSSO
+
+realm_first=1
+realm_last=
+
+realm_base_name=realm

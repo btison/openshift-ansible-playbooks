@@ -1,0 +1,58 @@
+---
+- name: "wait for sso to be ready"
+  k8s_info:
+    api_version: apps/v1
+    kind: statefulset
+    name: "{{ rhsso_statefulset_name }}"
+    namespace: "{{ rhsso_namespace }}"
+  register: r_rhsso_statefulset
+  retries: 30
+  delay: 10
+  changed_when: false
+  until:
+    - r_rhsso_statefulset.resources is defined
+    - r_rhsso_statefulset.resources | length | int > 0
+    - r_rhsso_statefulset.resources[0].status.readyReplicas is defined
+    - r_rhsso_statefulset.resources[0].status.replicas is defined
+    - r_rhsso_statefulset.resources[0].status.readyReplicas == r_rhsso_statefulset.resources[0].status.replicas
+
+- name: "retrieve sso route"
+  k8s_info:
+    api_version: route.openshift.io/v1
+    kind: route
+    name: "{{ rhsso_route_name }}"
+    namespace: "{{ rhsso_namespace }}"
+  register: r_rhsso_route
+
+- name: "get sso admin credentials secret"
+  k8s_info:
+    api_version: v1
+    kind: secret
+    namespace: "{{ rhsso_namespace }}"
+    name: "{{ rhsso_admin_credentials_secret }}"
+  register: r_rhsso_admin_credentials
+
+- set_fact:
+    rhsso_admin_user: "{{ r_rhsso_admin_credentials.resources[0].data.ADMIN_USERNAME | b64decode }}"
+    rhsso_admin_password: "{{ r_rhsso_admin_credentials.resources[0].data.ADMIN_PASSWORD | b64decode }}"
+    rhsso_url: "https://{{ r_rhsso_route.resources[0].spec.host }}"
+
+- name: get admin token
+  uri:
+    url: "{{ rhsso_url }}/auth/realms/master/protocol/openid-connect/token"
+    method: POST
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+    body: "username={{ rhsso_admin_user }}&password={{ rhsso_admin_password }}&grant_type=password&client_id=admin-cli"
+    status_code: 200
+    validate_certs: no
+  register: r_admin_token_result
+
+- name: "set admin token fact"
+  set_fact:
+    admin_token: "{{ r_admin_token_result | json_query('json.access_token') }}"
+
+- name: "Create realms"
+  include_tasks: realm.yml
+  loop: "{{ range(realm_first|int, realm_last|int + 1, 1)|list }}"
+  when: realm_last|int > 0

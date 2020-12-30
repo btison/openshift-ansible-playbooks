@@ -1,0 +1,22 @@
+---
+
+rhsso_operatorgroup: "{{ rhsso_namespace }}"
+
+# rhsso operator
+rhsso_operator_packagemanifest: keycloak-operator
+rhsso_operator_deployment_name: keycloak-operator
+rhsso_operator_subscription_name: keycloak-operator
+rhsso_operator_subscription_channel: alpha
+rhsso_operator_subscription_automatic_installplan_approval: false
+rhsso_operator_subscription_starting_csv: ""
+rhsso_operator_csv_prefix: keycloak-operator
+
+rhsso_cr_name: rhsso
+rhsso_external_access: False
+rhsso_route_name: rhsso
+
+rhsso_statefulset_name: keycloak
+
+rhsso_admin_credentials_secret: credential-rhsso
+
+rhsso_realm_template: generic_realm.json

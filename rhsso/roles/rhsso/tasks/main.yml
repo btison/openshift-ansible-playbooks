@@ -1,0 +1,78 @@
+---
+
+- name: "create namespace for rhsso operator"
+  import_role:
+    name: openshift_namespace
+  vars:
+    namespace: "{{ rhsso_namespace }}"
+    namespace_description: ""
+    namespace_display_name: ""
+
+- name: "create operatorgroup in {{ rhsso_namespace }}"
+  import_role:
+    name: operatorgroup
+  vars:
+    operatorgroup_namespace: "{{ rhsso_namespace }}"
+    operatorgroup_name: "{{ rhsso_operatorgroup }}"
+    operatorgroup_target_namespace: "{{ rhsso_namespace }}"
+
+- name: "deploy rhsso operator in {{ rhsso_namespace }}"
+  import_role:
+    name: openshift_operator
+  vars:
+    operator_name: rhsso-operator
+    packagemanifest: "{{ rhsso_operator_packagemanifest }}"
+    subscription_channel: "{{ rhsso_operator_subscription_channel }}"
+    subscription_namespace: "{{ rhsso_namespace }}" 
+    subscription_name: "{{ rhsso_operator_subscription_name }}"
+    automatic_installplan_approval: "{{ rhsso_operator_subscription_automatic_installplan_approval }}"
+    subscription_starting_csv: "{{ rhsso_operator_subscription_starting_csv }}"
+    csv_prefix: "{{ rhsso_operator_csv_prefix }}"
+
+- name: "wait for rhsso operator to be ready"
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ rhsso_namespace }}"
+    name: "{{ rhsso_operator_deployment_name }}"
+  register: r_rhsso_operator_deployment
+  retries: 20
+  delay: 10
+  until:
+  - r_rhsso_operator_deployment.resources is defined
+  - r_rhsso_operator_deployment.resources | length | int > 0
+  - r_rhsso_operator_deployment.resources[0].status.availableReplicas is defined
+  - r_rhsso_operator_deployment.resources[0].status.availableReplicas | int == r_rhsso_operator_deployment.resources[0].spec.replicas | int
+
+- name: "create keycloak custom resource"
+  k8s:
+    state: present
+    namespace: "{{ rhsso_namespace }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/keycloak-cr.j2"
+
+- name: "create keycloak route"
+  k8s:
+    state: present
+    namespace: "{{ rhsso_namespace }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/keycloak-route.j2"
+
+- name: "wait for sso to be ready"
+  k8s_info:
+    api_version: apps/v1
+    kind: statefulset
+    name: "{{ rhsso_statefulset_name }}"
+    namespace: "{{ rhsso_namespace }}"
+  register: r_rhsso_statefulset
+  retries: 30
+  delay: 10
+  changed_when: false
+  until:
+    - r_rhsso_statefulset.resources is defined
+    - r_rhsso_statefulset.resources | length | int > 0
+    - r_rhsso_statefulset.resources[0].status.readyReplicas is defined
+    - r_rhsso_statefulset.resources[0].status.replicas is defined
+    - r_rhsso_statefulset.resources[0].status.readyReplicas == r_rhsso_statefulset.resources[0].status.replicas
