@@ -36,8 +36,7 @@
 - name: "set facts for tenant creation"
   set_fact:
     system_master_url: "https://{{ master_domain }}.{{ ocp_domain}}"
-    end_tenant: "{{ threescale_number_of_tenants }}"
-
+  
 - name: "wait until the master route is available"
   k8s_info:
     api_version: route.openshift.io/v1
@@ -55,4 +54,4 @@
 - name: "create {{ threescale_number_of_tenants }} tenants"
   include_tasks: 
     file: tenant_loop.yml
-  loop: "{{ range(1, end_tenant|int + 1, 1)|list }}"
+  loop: "{{ range(threescale_start_tenant, threescale_end_tenant|int + 1, 1)|list }}"

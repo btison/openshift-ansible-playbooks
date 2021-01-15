@@ -3,7 +3,7 @@
 - name: remove the tenants
   include_tasks: 
       file: uninstall_tenants.yml
-  loop: "{{ range(1, threescale_number_of_tenants|int + 1, 1)|list }}"
+  loop: "{{ range(threescale_start_tenant, threescale_end_tenant|int + 1, 1)|list }}"
 
 - name: "delete 3scale api manager"
   k8s:

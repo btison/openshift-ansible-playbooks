@@ -46,7 +46,8 @@ threescale_redhat_service_token_password=
 
 # tenants
 threescale_create_tenants=true
-threescale_number_of_tenants=10
+threescale_start_tenant=1
+threescale_end_tenant=2
 tenant_admin_name_base=api
 ocp_user_name_base=user
 tenant_admin_password=admin
