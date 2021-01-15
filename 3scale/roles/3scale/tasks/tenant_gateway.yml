@@ -108,7 +108,7 @@
     definition: "{{ lookup('template', resource ) | from_yaml }}"
   vars:
     resource: "{{ resources_dir}}/apicast.j2"
-    threescale_apicast_name: stage-apicast
+    threescale_apicast_name: "{{ threescale_apicast_staging }}"
     threescale_apicast_configuration_url_secret: apicast-configuration-url-secret-stage
     threescale_apicast_configuration_load_mode: lazy
     threescale_apicast_deployment_environment: sandbox
@@ -120,7 +120,7 @@
     definition: "{{ lookup('template', resource ) | from_yaml }}"
   vars:
     resource: "{{ resources_dir}}/apicast.j2"
-    threescale_apicast_name: prod-apicast
+    threescale_apicast_name: "{{ threescale_apicast_production }}"
     threescale_apicast_configuration_url_secret: apicast-configuration-url-secret-prod
     threescale_apicast_configuration_load_mode: boot
     threescale_apicast_deployment_environment: production

@@ -30,3 +30,6 @@ threescale_apicast_subscription_starting_csv: ""
 threescale_apicast_operator_deployment: apicast-operator
 
 threescale_tenant_gw_namespace_base: "{{ threescale_namespace }}"
+
+threescale_apicast_staging: stage
+threescale_apicast_production: prod

@@ -13,7 +13,7 @@
     api_version: apps.3scale.net/v1alpha1
     kind: apicast
     namespace: '{{ tenant_gw_project }}'
-    name: stage-apicast
+    name: "{{ threescale_apicast_staging }}"
 
 - name: "delete prod apicast for tenant {{ org_name }}"
   k8s:
@@ -21,7 +21,7 @@
     api_version: apps.3scale.net/v1alpha1
     kind: apicast
     namespace: '{{ tenant_gw_project }}'
-    name: prod-apicast
+    name: "{{ threescale_apicast_production }}"
 
 - name: "delete threescale-portal-endpoint secrets in {{ tenant_gw_project }}"
   k8s:
