@@ -8,9 +8,6 @@
     namespace: openshift-marketplace
   register: r_packagemanifest
 
-- debug:
-    var: r_packagemanifest
-
 - name: "set facts for {{ operator_name }} operator"
   set_fact:
     subscription_package_name: "{{ r_packagemanifest.resources[0].status.packageName }}"
