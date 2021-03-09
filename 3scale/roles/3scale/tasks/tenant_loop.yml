@@ -7,7 +7,7 @@
 
 - set_fact:
     org_name: "{{ ocp_admin_id }}-{{ threescale_tenant_org_name_base }}"
-    tenant_gw_project: "{{ ocp_admin_id }}-{{ threescale_tenant_gw_namespace_base }}-gw"
+    tenant_gw_project: "{{ ocp_admin_id }}-{{ threescale_tenant_gateway_namespace_base }}"
     tenant_gw_project_display: "{{ ocp_admin_id }} APICast Gateways Project"
     tenant_admin_email: "{{ admin_email_user }}+{{ ocp_admin_id }}@{{ admin_email_domain }}"
 
@@ -25,6 +25,17 @@
   loop_control:
     loop_var: resource
 
+- name: "give the {{ ocp_admin_id }} user view access to the {{ threescale_namespace }} namespace"
+  k8s:
+    state: present
+    namespace: "{{ threescale_namespace }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "{{ resources_dir }}/rolebinding-tenant.j2"
+    rolebinding_name: "{{ ocp_admin_id }}-view"
+    ocp_user: "{{ ocp_admin_id }}"
+    cluster_role: view
+  
 - import_tasks: tenant_gateway.yml
   when: 
     - threescale_create_gws_with_each_tenant is defined 
