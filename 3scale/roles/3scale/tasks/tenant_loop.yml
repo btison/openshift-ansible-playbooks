@@ -8,7 +8,7 @@
 - set_fact:
     org_name: "{{ ocp_admin_id }}-{{ threescale_tenant_org_name_base }}"
     tenant_gw_project: "{{ ocp_admin_id }}-{{ threescale_tenant_gateway_namespace_base }}"
-    tenant_gw_project_display: "{{ ocp_admin_id }} APICast Gateways Project"
+    tenant_gw_project_display: "{{ ocp_admin_id }} APIcast Gateways Project"
     tenant_admin_email: "{{ admin_email_user }}+{{ ocp_admin_id }}@{{ admin_email_domain }}"
 
 - name: "create the {{ org_name }} tenant CR"
