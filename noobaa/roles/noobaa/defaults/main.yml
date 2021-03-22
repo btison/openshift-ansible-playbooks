@@ -2,15 +2,15 @@
 
 noobaa_operator_group: "{{ noobaa_namespace }}"
 
-noobaa_packagemanifest: noobaa-operator
+ocs_packagemanifest: ocs-operator
 
-noobaa_subscription_namespace: "{{ noobaa_namespace }}"
-noobaa_subscription_name: noobaa-operator
+ocs_subscription_namespace: "{{ noobaa_namespace }}"
+ocs_subscription_name: ocs-operator
 
-noobaa_automatic_installplan_approval: false
-noobaa_subscription_starting_csv: ""
+ocs_automatic_installplan_approval: false
+ocs_subscription_starting_csv: ""
 
-noobaa_operator_deployment: noobaa-operator
+ocs_operator_deployment: ocs-operator
 
 noobaa_resource_name: noobaa
 
