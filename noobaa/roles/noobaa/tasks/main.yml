@@ -1,27 +1,5 @@
 ---
 
-- name: "install operatorhubio-catalog catalog source"
-  k8s:
-    state: present
-    definition: "{{ lookup('file', resource ) | from_yaml }}"
-  vars:
-    resource: "{{ resources_dir }}/operatorhubio-catalog.yml"
-
-- name: "wait until operatorhubio-catalog catalog source is ready"
-  k8s_info:
-    api_version: operators.coreos.com/v1alpha1
-    kind: catalogsource
-    namespace: openshift-marketplace
-    name: operatorhubio-catalog
-  register: r_operatorhubio_catalog_source
-  retries: 40
-  delay: 15
-  until:
-    - r_operatorhubio_catalog_source.resources is defined
-    - r_operatorhubio_catalog_source.resources | length > 0
-    - r_operatorhubio_catalog_source.resources[0].status.connectionState.lastObservedState is defined
-    - r_operatorhubio_catalog_source.resources[0].status.connectionState.lastObservedState == "READY"
-
 - name: "create namespace for noobaa operator"
   k8s:
     state: present
@@ -42,49 +20,49 @@
     operator_group: "{{ noobaa_operator_group }}"
     operatorgroup_target_namespace: "{{ noobaa_namespace }}"
 
-- name: "get packagemanifest for noobaa operator"
+- name: "get packagemanifest for ocs operator"
   k8s_info:
     api_version: packages.operators.coreos.com/v1
     kind: PackageManifest
-    name: "{{ noobaa_packagemanifest }}"
+    name: "{{ ocs_packagemanifest }}"
     namespace: openshift-marketplace
   register: r_packagemanifest
 
-- name: "set facts for noobaa operator"
+- name: "set facts for ocs operator"
   set_fact:
-    noobaa_subscription_package_name: "{{ r_packagemanifest.resources[0].status.packageName }}"
-    noobaa_subscription_catalog_source: "{{ r_packagemanifest.resources[0].status.catalogSource }}"
-    noobaa_subscription_catalog_source_namespace: "{{ r_packagemanifest.resources[0].status.catalogSourceNamespace }}"
+    ocs_subscription_package_name: "{{ r_packagemanifest.resources[0].status.packageName }}"
+    ocs_subscription_catalog_source: "{{ r_packagemanifest.resources[0].status.catalogSource }}"
+    ocs_subscription_catalog_source_namespace: "{{ r_packagemanifest.resources[0].status.catalogSourceNamespace }}"
 
-- name: "determine channel for noobaa operator if no channel specified"
-  when: noobaa_subscription_channel | default("") | length == 0
+- name: "determine channel for ocs operator if no channel specified"
+  when: ocs_subscription_channel | default("") | length == 0
   set_fact:
-    noobaa_subscription_channel: "{{ r_packagemanifest.resources[0].status.defaultChannel }}"
+    ocs_subscription_channel: "{{ r_packagemanifest.resources[0].status.defaultChannel }}"
 
-- name: "print noobaa channel to be installed"
+- name: "print ocs channel to be installed"
   debug:
-    msg: "Noobaa operator channel to be installed: {{ noobaa_subscription_channel }}"
+    msg: "OCS operator channel to be installed: {{ ocs_subscription_channel }}"
 
-- name: "create subscription for noobaa operator in {{ noobaa_subscription_namespace }}"
+- name: "create subscription for ocs operator in {{ ocs_subscription_namespace }}"
   k8s:
     state: present
-    namespace: "{{ noobaa_subscription_namespace }}"
+    namespace: "{{ ocs_subscription_namespace }}"
     definition: "{{ lookup('template', resource) | from_yaml }}"
   vars:
     resource: "{{ resources_dir }}/subscription.j2"
-    subscription_name: "{{ noobaa_subscription_name }}"
-    subscription_channel: "{{ noobaa_subscription_channel }}"
-    automatic_installplan_approval: "{{ noobaa_automatic_installplan_approval }}"
-    subscription_package_name: "{{ noobaa_subscription_package_name }}"
-    subscription_catalog_source: "{{ noobaa_subscription_catalog_source }}"
-    subscription_catalog_source_namespace: "{{ noobaa_subscription_catalog_source_namespace }}"
-    subscription_starting_csv: "{{ noobaa_subscription_starting_csv }}"
+    subscription_name: "{{ ocs_subscription_name }}"
+    subscription_channel: "{{ ocs_subscription_channel }}"
+    automatic_installplan_approval: "{{ ocs_automatic_installplan_approval }}"
+    subscription_package_name: "{{ ocs_subscription_package_name }}"
+    subscription_catalog_source: "{{ ocs_subscription_catalog_source }}"
+    subscription_catalog_source_namespace: "{{ ocs_subscription_catalog_source_namespace }}"
+    subscription_starting_csv: "{{ ocs_subscription_starting_csv }}"
 
 - name: "wait until installplan is created"
   k8s_info:
     api_version: operators.coreos.com/v1alpha1
     kind: InstallPlan
-    namespace: "{{ noobaa_subscription_namespace }}"
+    namespace: "{{ ocs_subscription_namespace }}"
   register: r_install_plan
   retries: 30
   delay: 5
@@ -92,34 +70,34 @@
     - r_install_plan.resources | length > 0
     - r_install_plan.resources[0] | to_json | from_json | json_query(query) | length > 0
   vars:
-    query: "spec.clusterServiceVersionNames[] | [?contains(@, 'noobaa-operator') == `true`]"
+    query: "spec.clusterServiceVersionNames[] | [?contains(@, 'ocs-operator') == `true`]"
 
 - name: "manually approve installplan"
-  when: not noobaa_automatic_installplan_approval
+  when: not ocs_automatic_installplan_approval
   block:
     - name: "set installplan name"
       set_fact:
-        noobaa_install_plan: >-
+        ocs_install_plan: >-
           {{ r_install_plan.resources | to_json | from_json | json_query(query) }}
       vars:
         query: >-
-          [?starts_with(spec.clusterServiceVersionNames[0], 'noobaa-operator')].metadata.name|[0]
+          [?starts_with(spec.clusterServiceVersionNames[0], 'ocs-operator')].metadata.name|[0]
 
     - name: "approve installplan"
       k8s:
         state: present
-        namespace: "{{ noobaa_subscription_namespace }}"
+        namespace: "{{ ocs_subscription_namespace }}"
         definition: "{{ lookup( 'template', resource ) }}"
       vars:
         resource: "{{ resources_dir }}/installplan.j2"
-        install_plan_name: "{{ noobaa_install_plan }}"
+        install_plan_name: "{{ ocs_install_plan }}"
 
 - name: "get subscription"
   k8s_info:
     api_version: operators.coreos.com/v1alpha1
     kind: Subscription
-    name: "{{ noobaa_subscription_name }}"
-    namespace: "{{ noobaa_subscription_namespace }}"
+    name: "{{ ocs_subscription_name }}"
+    namespace: "{{ ocs_subscription_namespace }}"
   register: r_subscription
   retries: 30
   delay: 5
@@ -135,7 +113,7 @@
     api_version: operators.coreos.com/v1alpha1
     kind: ClusterServiceVersion
     name: "{{ r_subscription.resources[0].status.currentCSV }}"
-    namespace: "{{ noobaa_subscription_namespace }}"
+    namespace: "{{ ocs_subscription_namespace }}"
   register: r_csv
   retries: 15
   delay: 5
@@ -144,20 +122,20 @@
     - r_csv.resources[0].status.phase | length > 0
     - r_csv.resources[0].status.phase == "Succeeded"
 
-- name: "wait for noobaa operator to be ready"
+- name: "wait for ocs operator to be ready"
   k8s_info:
     api_version: v1
     kind: Deployment
-    namespace: "{{ noobaa_subscription_namespace }}"
-    name: "{{ noobaa_operator_deployment }}"
-  register: r_noobaa_operator_deployment
+    namespace: "{{ ocs_subscription_namespace }}"
+    name: "{{ ocs_operator_deployment }}"
+  register: r_ocs_operator_deployment
   retries: 40
   delay: 10
   until:
-    - r_noobaa_operator_deployment.resources is defined
-    - r_noobaa_operator_deployment.resources | length | int > 0
-    - r_noobaa_operator_deployment.resources[0].status.availableReplicas is defined
-    - r_noobaa_operator_deployment.resources[0].status.availableReplicas | int == r_noobaa_operator_deployment.resources[0].spec.replicas | int
+    - r_ocs_operator_deployment.resources is defined
+    - r_ocs_operator_deployment.resources | length | int > 0
+    - r_ocs_operator_deployment.resources[0].status.availableReplicas is defined
+    - r_ocs_operator_deployment.resources[0].status.availableReplicas | int == r_ocs_operator_deployment.resources[0].spec.replicas | int
 
 - name: "create Noobaa custom resource"
   k8s:
