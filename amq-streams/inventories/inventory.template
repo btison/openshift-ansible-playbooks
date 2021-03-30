@@ -1,0 +1,16 @@
+[all:vars]
+
+# values: 'OLM', 'distro'
+install_type=OLM
+
+# values: 'cluster', 'namespace'
+operator_scope=namespace
+
+# values: 'strimzi', 'amq-streams'
+install=strimzi
+
+strimzi_operator_namespace=kafka
+
+strimzi_operator_remove_operator_group=true
+strimzi_operator_remove_namespace=true
+strimzi_operator_remove_cluster_resources=true

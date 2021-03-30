@@ -1,0 +1,9 @@
+---
+
+strimzi_operator_packagemanifest: strimzi-kafka-operator
+strimzi_operator_subscription_channel: stable
+strimzi_operator_subscription_name: strimzi-kafka-operator
+strimzi_operator_subscription_automatic_installplan_approval: false
+strimzi_operator_subscription_starting_csv: ""
+strimzi_operator_csv_prefix: strimzi-cluster-operator
+strimzi_operator_deployment_name_prefix: strimzi-cluster-operator

@@ -1,0 +1,62 @@
+---
+
+- name: "delete strimzi operator in {{ strimzi_operator_namespace }}"
+  import_role:
+    name: openshift_operator
+    tasks_from: uninstall
+  vars:
+    operator_name: strimzi-operator
+    subscription_namespace: "{{ strimzi_operator_namespace }}" 
+    subscription_name: "{{ strimzi_operator_subscription_name }}"
+    csv_prefix: "{{ strimzi_operator_csv_prefix }}"
+
+- name: "delete operatorgroup in {{ strimzi_operator_namespace }}"
+  when: strimzi_operator_remove_operator_group | default(False) | bool
+  import_role:
+    name: operatorgroup
+    tasks_from: uninstall
+  vars:
+    operatorgroup_namespace: "{{ strimzi_operator_namespace }}"
+    operatorgroup_name: "{{ strimzi_operator_namespace }}"
+
+- name: "delete namespace for strimzi operator"
+  when: strimzi_operator_remove_namespace | default(False) | bool
+  import_role:
+    name: openshift_namespace
+    tasks_from: uninstall
+  vars:
+    namespace: "{{ strimzi_operator_namespace }}"
+
+# delete all clusterwide resources from installplan
+
+- name: "remove strimzi crds"
+  when: strimzi_operator_remove_cluster_resources | default(False) | bool
+  k8s:
+    state: absent
+    api_version: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    name: "{{ item }}"
+  loop:
+  - "kafkaconnectors.kafka.strimzi.io"
+  - "kafkaconnects.kafka.strimzi.io"
+  - "kafkatopics.kafka.strimzi.io"
+  - "kafkausers.kafka.strimzi.io"
+  - "kafkarebalances.kafka.strimzi.io"
+  - "kafkaconnects2is.kafka.strimzi.io"
+  - "kafkamirrormaker2s.kafka.strimzi.io"
+  - "kafkamirrormakers.kafka.strimzi.io"
+  - "kafkabridges.kafka.strimzi.io"
+  - "kafkas.kafka.strimzi.io"
+
+- name: "remove strimzi clusterroles"
+  when: strimzi_operator_remove_cluster_resources | default(False) | bool
+  k8s:
+    state: absent
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    name: "{{ item }}"
+  loop:
+    - "strimzi-entity-operator"
+    - "strimzi-kafka-broker"
+    - "strimzi-kafka-client"
+    - "strimzi-topic-operator"

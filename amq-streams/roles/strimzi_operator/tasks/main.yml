@@ -1,0 +1,70 @@
+---
+
+- name: "create namespace for strimzi operator"
+  import_role:
+    name: openshift_namespace
+  vars:
+    namespace: "{{ strimzi_operator_namespace }}"
+    namespace_description: ""
+    namespace_display_name: ""
+
+- set_fact:
+    strimzi_operator_target: "{{ strimzi_operator_namespace }}"
+  when:
+    operator_scope == 'namespace'
+
+- set_fact:
+    strimzi_operator_target: ""
+  when:
+    operator_scope == 'cluster'    
+
+- name: "create operatorgroup in {{ strimzi_operator_namespace }}"
+  import_role:
+    name: operatorgroup
+  vars:
+    operatorgroup_namespace: "{{ strimzi_operator_namespace }}"
+    operatorgroup_name: "{{ strimzi_operator_namespace }}"
+    operatorgroup_target_namespace: "{{ strimzi_operator_target }}"
+
+- name: "deploy strimzi operator in {{ strimzi_operator_namespace }}"
+  import_role:
+    name: openshift_operator
+  vars:
+    operator_name: strimzi-operator
+    packagemanifest: "{{ strimzi_operator_packagemanifest }}"
+    subscription_channel: "{{ strimzi_operator_subscription_channel }}"
+    subscription_namespace: "{{ strimzi_operator_namespace }}" 
+    subscription_name: "{{ strimzi_operator_subscription_name }}"
+    automatic_installplan_approval: "{{ strimzi_operator_subscription_automatic_installplan_approval }}"
+    subscription_starting_csv: "{{ strimzi_operator_subscription_starting_csv }}"
+    csv_prefix: "{{ strimzi_operator_csv_prefix }}"
+
+- name: get deployments in {{ strimzi_operator_namespace }}"
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ strimzi_operator_namespace }}"
+  register: r_deployments
+
+- name: "set deployment name"
+  when: r_deployments.resources | length > 0
+  set_fact:
+    strimzi_operator_deployment: "{{ r_deployments.resources | to_json | from_json | json_query(query) }}"
+  vars:
+    query: >-
+      [?starts_with(metadata.name, '{{ strimzi_operator_deployment_name_prefix }}')].metadata.name|[0]
+
+- name: "wait for strimzi operator to be ready"
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ strimzi_operator_namespace }}"
+    name: "{{ strimzi_operator_deployment }}"
+  register: r_strimzi_operator_deployment
+  retries: 20
+  delay: 10
+  until:
+  - r_strimzi_operator_deployment.resources is defined
+  - r_strimzi_operator_deployment.resources | length | int > 0
+  - r_strimzi_operator_deployment.resources[0].status.availableReplicas is defined
+  - r_strimzi_operator_deployment.resources[0].status.availableReplicas | int == r_strimzi_operator_deployment.resources[0].spec.replicas | int

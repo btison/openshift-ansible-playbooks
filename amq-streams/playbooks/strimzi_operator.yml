@@ -1,0 +1,42 @@
+---
+- name: Deploy Strimzi operator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  run_once: true
+
+  tasks:
+    - include_role:
+        name: ../roles/strimzi_operator
+      when: >
+        (ACTION is not defined or
+        ACTION is none or
+        ACTION|trim() == "" or
+        ACTION|trim() == "install") and
+        (install is defined and
+        install == 'strimzi')
+    - include_role:
+        name: ../roles/amq_streams_operator
+      when: >
+        (ACTION is not defined or
+        ACTION is none or
+        ACTION|trim() == "" or
+        ACTION|trim() == "install") and
+        (install is defined and
+        install == 'amq-streams')
+    - include_role:
+        name: ../roles/strimzi_operator
+        tasks_from: uninstall
+      when: >
+        (ACTION is defined and
+        ACTION|trim() == "uninstall") and 
+        (install is defined and
+        install == 'strimzi')
+    - include_role:
+        name: ../roles/amq_streams_operator
+        tasks_from: uninstall
+      when: >
+        (ACTION is defined and
+        ACTION|trim() == "uninstall") and 
+        (install is defined and
+        install == 'amq-streams')
