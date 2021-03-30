@@ -4,7 +4,9 @@
   connection: local
   gather_facts: false
   run_once: true
-
+  vars_files:
+    - group_vars/strimzi.yml
+  
   tasks:
     - include_role:
         name: ../roles/strimzi_operator
@@ -13,6 +15,8 @@
         ACTION is none or
         ACTION|trim() == "" or
         ACTION|trim() == "install") and
+        (install_source is defined and
+        install_source == 'OLM') and
         (install is defined and
         install == 'strimzi')
     - include_role:
@@ -22,14 +26,27 @@
         ACTION is none or
         ACTION|trim() == "" or
         ACTION|trim() == "install") and
+        (install_source is defined and
+        install_source == 'OLM') and
         (install is defined and
         install == 'amq-streams')
+    - include_role:
+        name: ../roles/strimzi_operator_distro
+      when: >
+        (ACTION is not defined or
+        ACTION is none or
+        ACTION|trim() == "" or
+        ACTION|trim() == "install") and
+        (install_source is defined and
+        install_source == 'distro')
     - include_role:
         name: ../roles/strimzi_operator
         tasks_from: uninstall
       when: >
         (ACTION is defined and
         ACTION|trim() == "uninstall") and 
+        (install_source is defined and
+        install_source == 'OLM') and
         (install is defined and
         install == 'strimzi')
     - include_role:
@@ -38,5 +55,15 @@
       when: >
         (ACTION is defined and
         ACTION|trim() == "uninstall") and 
+        (install_source is defined and
+        install_source == 'OLM') and
         (install is defined and
         install == 'amq-streams')
+    - include_role:
+        name: ../roles/strimzi_operator_distro
+        tasks_from: uninstall
+      when: >
+        (ACTION is defined and
+        ACTION|trim() == "uninstall") and 
+        (install_source is defined and
+        install_source == 'distro')

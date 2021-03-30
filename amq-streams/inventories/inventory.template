@@ -1,13 +1,15 @@
 [all:vars]
 
 # values: 'OLM', 'distro'
-install_type=OLM
+install_source=OLM
 
 # values: 'cluster', 'namespace'
 operator_scope=namespace
 
 # values: 'strimzi', 'amq-streams'
 install=strimzi
+
+strimzi_operator_version=0.22.1
 
 strimzi_operator_namespace=kafka
 

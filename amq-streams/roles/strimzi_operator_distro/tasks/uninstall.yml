@@ -1,0 +1,136 @@
+---
+- name: "find strimzi operator deployment in {{ strimzi_operator_namespace }}"
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ strimzi_operator_namespace }}"
+    label_selectors:
+      - app=strimzi
+  register: r_strimzi_operator_deployment
+
+- name: "delete strimzi operator deployment in {{ strimzi_operator_namespace }}"
+  k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ strimzi_operator_namespace }}"
+  loop: "{{ r_strimzi_operator_deployment.resources }}"
+
+- name: "find strimzi operator configmaps in {{ strimzi_operator_namespace }}"
+  k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    namespace: "{{ strimzi_operator_namespace }}"
+    label_selectors:
+      - app=strimzi
+  register: r_strimzi_operator_cm
+
+- name: "delete strimzi operator configmaps in {{ strimzi_operator_namespace }}"
+  k8s:
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ strimzi_operator_namespace }}"
+  loop: "{{ r_strimzi_operator_cm.resources }}"
+
+- name: "find strimzi operator service accounts in {{ strimzi_operator_namespace }}"
+  k8s_info:
+    api_version: v1
+    kind: ServiceAccount
+    namespace: "{{ strimzi_operator_namespace }}"
+    label_selectors:
+      - app=strimzi
+  register: r_strimzi_operator_sa
+
+- name: "delete strimzi operator service accounts in {{ strimzi_operator_namespace }}"
+  k8s:
+    state: absent
+    api_version: v1
+    kind: ServiceAccount
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ strimzi_operator_namespace }}"
+  loop: "{{ r_strimzi_operator_sa.resources }}"
+
+- name: "find strimzi operator rolebindings in {{ strimzi_operator_namespace }}"
+  k8s_info:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    namespace: "{{ strimzi_operator_namespace }}"
+    label_selectors:
+      - app=strimzi
+  register: r_strimzi_operator_rb
+
+- name: "delete strimzi operator role bindings in {{ strimzi_operator_namespace }}"
+  k8s:
+    state: absent
+    api_version: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ strimzi_operator_namespace }}"
+  loop: "{{ r_strimzi_operator_rb.resources }}"
+
+- name: "delete namespace for strimzi operator"
+  when: strimzi_operator_remove_namespace | default(False) | bool
+  import_role:
+    name: openshift_namespace
+    tasks_from: uninstall
+  vars:
+    namespace: "{{ strimzi_operator_namespace }}"
+
+# delete all clusterwide resources from installplan
+
+- name: "find strimzi operator clusterrolebindings"
+  when: strimzi_operator_remove_cluster_resources | default(False) | bool
+  k8s_info:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    label_selectors:
+      - app=strimzi
+  register: r_strimzi_operator_crb
+
+- name: "delete strimzi operator clusterrolebindings"
+  when: strimzi_operator_remove_cluster_resources | default(False) | bool
+  k8s:
+    state: absent
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: "{{ item.metadata.name }}"
+  loop: "{{ r_strimzi_operator_crb.resources }}"
+
+- name: "find strimzi operator clusterroles"
+  when: strimzi_operator_remove_cluster_resources | default(False) | bool
+  k8s_info:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    label_selectors:
+      - app=strimzi
+  register: r_strimzi_operator_cr
+
+- name: "delete strimzi operator clusterroles"
+  when: strimzi_operator_remove_cluster_resources | default(False) | bool
+  k8s:
+    state: absent
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    name: "{{ item.metadata.name }}"
+  loop: "{{ r_strimzi_operator_cr.resources }}"
+
+- name: "find strimzi crd"
+  when: strimzi_operator_remove_cluster_resources | default(False) | bool
+  k8s_info:
+    api_version: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    label_selectors:
+      - app=strimzi
+  register: r_strimzi_operator_cr
+
+- name: "delete strimzi crd"
+  when: strimzi_operator_remove_cluster_resources | default(False) | bool
+  k8s:
+    state: absent
+    api_version: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    name: "{{ item.metadata.name }}"
+  loop: "{{ r_strimzi_operator_cr.resources }}"

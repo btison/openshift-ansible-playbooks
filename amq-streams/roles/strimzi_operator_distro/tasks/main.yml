@@ -1,0 +1,86 @@
+---
+
+- name: work directory
+  import_role:
+    name: work_dir
+  vars:
+    work_dir_name: strimzi-distro
+
+- name: "create namespace for strimzi operator"
+  import_role:
+    name: openshift_namespace
+  vars:
+    namespace: "{{ strimzi_operator_namespace }}"
+    namespace_description: ""
+    namespace_display_name: ""
+
+- name: "download strimzi distribution - version {{ strimzi_operator_version }}"
+  get_url:
+    url: "{{ strimzi_operator_distro }}"
+    dest: "{{ work_dir }}/strimzi-operator.tar.gz"
+    mode: '0666'
+
+- name: "untar strimzi distro archive"
+  unarchive:
+    src: "{{ work_dir }}/strimzi-operator.tar.gz"
+    dest: "{{ work_dir }}"
+    copy: no
+    extra_opts:
+     - --strip-components=1
+
+- name: "list rolebinding files in directory"
+  find:
+    path: 
+     - "{{ work_dir }}/install/cluster-operator"
+    patterns: "*RoleBinding*.yaml"
+  register: r_strimzi_installation_rolebinding_files
+  
+- name: replace namespace in rolebinding files
+  replace:
+    path: "{{ item.path }}"
+    regexp: "namespace: .*"
+    replace: "namespace: {{ strimzi_operator_namespace }}"
+  loop: "{{ r_strimzi_installation_rolebinding_files.files }}"
+    
+- name: "list all files in install/cluster-operator directory"
+  find:
+    path: 
+     - "{{ work_dir }}/install/cluster-operator"
+    patterns: "*"
+  register: r_strimzi_install_cluster_operator_files
+
+- name: "create strimzi files in install/cluster-operator directory"
+  k8s:
+    state: present
+    namespace: "{{ strimzi_operator_namespace }}"
+    definition: "{{ lookup('file', item.path) | from_yaml }}"
+  loop: "{{ r_strimzi_install_cluster_operator_files.files | sort(attribute='path') }}"
+
+- name: "list all files in install/strimzi-admin directory"
+  find:
+    path: 
+     - "{{ work_dir }}/install/strimzi-admin"
+    patterns: "*"
+  register: r_strimzi_install_strimzi_admin_files
+
+- name: "create strimzi files in install/strimzi-admin directory"
+  k8s:
+    state: present
+    namespace: "{{ strimzi_operator_namespace }}"
+    definition: "{{ lookup('file', item.path) | from_yaml }}"
+  loop: "{{ r_strimzi_install_strimzi_admin_files.files | sort(attribute='path') }}"
+
+- name: "wait for strimzi operator to be ready"
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ strimzi_operator_namespace }}"
+    name: "{{ strimzi_operator_deployment }}"
+  register: r_strimzi_operator_deployment
+  retries: 20
+  delay: 10
+  until:
+  - r_strimzi_operator_deployment.resources is defined
+  - r_strimzi_operator_deployment.resources | length | int > 0
+  - r_strimzi_operator_deployment.resources[0].status.availableReplicas is defined
+  - r_strimzi_operator_deployment.resources[0].status.availableReplicas | int == r_strimzi_operator_deployment.resources[0].spec.replicas | int
