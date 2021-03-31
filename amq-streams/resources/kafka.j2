@@ -15,6 +15,12 @@ spec:
         port: 9093
         type: internal
         tls: true
+{% if kafka_listener_external|bool == true %}
+      - name: external
+        port: 9094
+        type: {{ kafka_listener_external_type }}
+        tls: true
+{% endif %}
     resources:
       requests:
         cpu: '{{ kafka_requests_cpu }}'
