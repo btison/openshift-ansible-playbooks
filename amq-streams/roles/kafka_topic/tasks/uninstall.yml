@@ -1,0 +1,16 @@
+---
+- name: "list KafkaTopic instances"
+  k8s_info:
+    api_version: "{{ kafka_cr_api_version }}"
+    kind: KafkaTopic
+    namespace: "{{ kafka_cluster_namespace }}"
+  register: r_kafka_topics
+
+- name: "delete KafkaTopic instances"
+  k8s:
+    state: absent
+    api_version: "{{ kafka_cr_api_version }}"
+    kind: KafkaTopic
+    namespace: "{{ kafka_cluster_namespace }}"
+    name: "{{ item.metadata.name }}"
+  loop: "{{ r_kafka_topics.resources }}"

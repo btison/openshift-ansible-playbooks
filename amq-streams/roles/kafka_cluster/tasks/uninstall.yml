@@ -1,5 +1,10 @@
 ---
 
+- name: "delete kafka topics"
+  import_role:
+    name: kafka_topic
+    tasks_from: uninstall
+
 - name: "remove {{ kafka_cluster }} kafka cluster"
   k8s:
     state: absent

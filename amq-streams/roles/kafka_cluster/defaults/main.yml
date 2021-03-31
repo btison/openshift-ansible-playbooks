@@ -52,5 +52,3 @@ user_operator_readiness_probe_initial_delay_seconds: 10
 user_operator_readiness_probe_timeout_seconds: 5
 user_operator_liveness_probe_initial_delay_seconds: 15 
 user_operator_liveness_probe_timeout_seconds: 5
-
-entity_operator_deployment: kafka-cluster-entity-operator

@@ -45,3 +45,5 @@ kafka_enable_exporter=true
 zookeeper_replicas=3
 
 zookeeper_storage_type=persistent
+
+topic_config_default=true

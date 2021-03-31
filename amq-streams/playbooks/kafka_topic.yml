@@ -1,5 +1,6 @@
 ---
-- name: Deploy Kafka Cluster
+
+- name: Deploy Kafka Topic
   hosts: localhost
   connection: local
   gather_facts: false
@@ -9,14 +10,14 @@
 
   tasks:
     - include_role:
-        name: ../roles/kafka_cluster
+        name: ../roles/kafka_topic
       when: >
         ACTION is not defined or
         ACTION is none or
         ACTION|trim() == "" or
         ACTION|trim() == "create"
     - include_role:
-        name: ../roles/kafka_cluster
+        name: ../roles/kafka_topic
         tasks_from: uninstall
       when: >
         ACTION is defined and

@@ -1,0 +1,18 @@
+apiVersion: {{ kafka_cr_api_version }}
+kind: KafkaTopic
+metadata:
+  name: {{ topic_name }}
+  labels:
+    strimzi.io/cluster: {{ kafka_cluster }}
+spec:
+  partitions: {{ topic_partitions }}
+  replicas: {{ topic_replicas }}
+{% if topic_config_default|bool == true %}
+  config: {}
+{% else %}
+  config:
+    retention.ms: {{ topic_retention_ms }}
+    segment.bytes: {{ topic_config_segment_bytes }}
+    message.timestamp.type: {{ topic_config_message_timestamp_type }}
+    cleanup.policy: {{ topic_config_cleanup_policy }}
+{% endif %}
