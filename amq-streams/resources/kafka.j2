@@ -15,11 +15,27 @@ spec:
         port: 9093
         type: internal
         tls: true
+{% if kafka_authentication|upper == 'OAUTH' %}
+        authentication:
+          type: oauth
+          validIssuerUri: https://{{ kafka_oauth_rhsso_host }}/auth/realms/{{ kafka_oauth_rhsso_realm }}
+          jwksEndpointUri: https://{{ kafka_oauth_rhsso_host }}/auth/realms/{{ kafka_oauth_rhsso_realm }}/protocol/openid-connect/certs
+          userNameClaim: preferred_username
+          maxSecondsWithoutReauthentication: {{ kafka_oauth_jwt_token_lifespan }} 
+{% endif %}
 {% if kafka_listener_external|bool == true %}
       - name: external
         port: 9094
         type: {{ kafka_listener_external_type }}
         tls: true
+{% endif %}
+{% if kafka_listener_external|bool == true and kafka_authentication|upper == 'OAUTH' %}
+        authentication:
+          type: oauth
+          validIssuerUri: https://{{ kafka_oauth_rhsso_host }}/auth/realms/{{ kafka_oauth_rhsso_realm }}
+          jwksEndpointUri: https://{{ kafka_oauth_rhsso_host }}/auth/realms/{{ kafka_oauth_rhsso_realm }}/protocol/openid-connect/certs
+          userNameClaim: preferred_username
+          maxSecondsWithoutReauthentication: {{ kafka_oauth_jwt_token_lifespan }} 
 {% endif %}
     resources:
       requests:

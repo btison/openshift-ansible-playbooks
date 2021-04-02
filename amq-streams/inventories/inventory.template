@@ -40,10 +40,19 @@ kafka_storage_type=persistent
 kafka_listener_external=true
 kafka_listener_external_type=route
 
+# values: none, oauth
+kafka_authentication=oauth
+
+# authentication oauth
+kafka_oauth_rhsso_host=
+kafka_oauth_rhsso_realm=
+kafka_oauth_jwt_token_lifespan=
+
 kafka_enable_exporter=true
 
 zookeeper_replicas=3
 
 zookeeper_storage_type=persistent
 
+#topic
 topic_config_default=true
