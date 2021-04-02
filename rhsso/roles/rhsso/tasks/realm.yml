@@ -1,11 +1,8 @@
 ---
 
-- set_fact:
-    realm_id: "{{ realm_base_name }}{{ item }}"
-
 - name: "copy realm template for realm {{ realm_id }}"
   template:
-    src: "{{ resources_dir }}/{{ rhsso_realm_template }}"
+    src: "{{ resources_dir }}/{{ realm_template }}"
     dest: "{{ work_dir }}/{{ realm_id }}.json"
 
 - name: "check if {{ realm_id }} exists"

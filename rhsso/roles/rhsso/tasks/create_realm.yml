@@ -1,0 +1,7 @@
+---
+- name: "get rh-sso admin token"
+  include_tasks: admin_token.yml
+
+- name: "Create realm"
+  include_tasks: realm.yml
+

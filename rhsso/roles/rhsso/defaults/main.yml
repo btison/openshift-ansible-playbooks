@@ -18,5 +18,3 @@ rhsso_route_name: rhsso
 rhsso_statefulset_name: keycloak
 
 rhsso_admin_credentials_secret: credential-rhsso
-
-rhsso_realm_template: generic_realm.json

@@ -8,7 +8,19 @@ rhsso_remove_cluster_resources=False
 
 rhsso_profile=RHSSO
 
+realm_template=generic_realm.json
+
+# realms (range)
 realm_first=1
 realm_last=
 
 realm_base_name=realm
+
+# single realm
+realm_id=test
+
+# client
+client_id=test
+
+client_template=client-service-account.json
+client_access_token_lifespan=600

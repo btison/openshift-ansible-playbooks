@@ -1,0 +1,64 @@
+---
+- name: "get rh-sso admin token"
+  include_tasks: admin_token.yml
+
+- name: "check if {{ realm_id }} exists"
+  uri:
+    url: "{{ rhsso_url }}/auth/admin/realms/{{ realm_id }}"
+    method: GET
+    headers:
+      Authorization: Bearer {{ admin_token }}
+    status_code: 200,404
+    validate_certs: no
+  register: r_realm_result
+  changed_when: false
+
+- name: "check if client {{ client_id }} exists in realm {{ realm_id }}"
+  uri:
+    url: "{{ rhsso_url }}/auth/admin/realms/{{ realm_id }}/clients/{{ client_id }}"
+    method: GET
+    headers:
+      Authorization: Bearer {{ admin_token }}
+    status_code: 200,404
+    validate_certs: no
+  register: r_client_result
+  changed_when: false  
+  when: r_realm_result.status == 200
+
+- name: "copy client template for client {{ client_id }}"
+  template:
+    src: "{{ resources_dir }}/{{ client_template }}"
+    dest: "{{ work_dir }}/{{ client_id }}.json"
+
+- name: "create client {{ client_id }} in realm {{ realm_id }}"
+  uri:
+    url: "{{ rhsso_url }}/auth/admin/realms/{{ realm_id }}/clients"
+    method: POST
+    headers:
+      Authorization: Bearer {{ admin_token }}
+      Content-Type: application/json
+    body: "{{ lookup('file', work_dir + '/' + client_id + '.json') }}"
+    body_format: json
+    status_code: 201
+    validate_certs: no
+  when: r_realm_result.status == 200 and r_client_result.status == 404
+
+- name: "retrieve client secret for client {{ client_id }}"
+  uri:
+    url: "{{ rhsso_url }}/auth/admin/realms/{{ realm_id }}/clients/{{ client_id }}/client-secret"
+    method: GET
+    headers:
+      Authorization: Bearer {{ admin_token }}
+      Content-Type: application/json
+    status_code: 200
+    validate_certs: no
+  changed_when: false
+  when: r_realm_result.status == 200
+  register: r_client_secret_result
+
+- name: "client id"
+  debug:
+    msg: 
+     - "Client ID: {{ client_id }}"
+     - "Client Secret: {{ r_client_secret_result.json.value }}"
+ 

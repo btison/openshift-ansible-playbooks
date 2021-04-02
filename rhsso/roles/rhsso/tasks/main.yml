@@ -67,7 +67,7 @@
     name: "{{ rhsso_statefulset_name }}"
     namespace: "{{ rhsso_namespace }}"
   register: r_rhsso_statefulset
-  retries: 30
+  retries: 60
   delay: 10
   changed_when: false
   until:
