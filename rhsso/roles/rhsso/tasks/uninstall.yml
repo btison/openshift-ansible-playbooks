@@ -42,3 +42,18 @@
     tasks_from: uninstall
   vars:
     namespace: "{{ rhsso_namespace }}"
+
+- name: "delete keycloak crds"
+  when: rhsso_remove_cluster_resources | default(False)| bool
+  k8s:
+    state: absent
+    api_version: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    name: "{{ item }}"
+  loop:
+  - "keycloakbackups.keycloak.org"
+  - "keycloakclients.keycloak.org"
+  - "keycloakrealms.keycloak.org"
+  - "keycloaks.keycloak.org"
+  - "keycloakusers.keycloak.org"
+    

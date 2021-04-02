@@ -4,6 +4,7 @@ rhsso_namespace=
 
 rhsso_remove_operator_group=True
 rhsso_remove_namespace=True
+rhsso_remove_cluster_resources=False
 
 rhsso_profile=RHSSO
 
