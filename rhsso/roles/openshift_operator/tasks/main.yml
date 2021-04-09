@@ -41,9 +41,10 @@
   delay: 5
   until:
     - r_install_plan.resources | length > 0
-    - r_install_plan.resources[0] | to_json | from_json | json_query(query) | length > 0
+    - r_install_plan.resources | to_json | from_json | json_query(query) | length > 0
   vars:
-    query: "spec.clusterServiceVersionNames[] | [?contains(@, '{{ csv_prefix }}') == `true`]"
+    query: >-
+      [?starts_with(spec.clusterServiceVersionNames[0], '{{ csv_prefix }}')].metadata.name
 
 - name: "manually approve installplan"
   when: not automatic_installplan_approval
