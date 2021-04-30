@@ -1,0 +1,45 @@
+---
+
+- name: "create namespace for rhoas operator"
+  import_role:
+    name: openshift_namespace
+  vars:
+    namespace: "{{ rhoas_operator_namespace }}"
+    namespace_description: ""
+    namespace_display_name: ""
+
+- name: "create operatorgroup in {{ rhoas_operator_namespace }}"
+  import_role:
+    name: operatorgroup
+  vars:
+    operatorgroup_namespace: "{{ rhoas_operator_namespace }}"
+    operatorgroup_name: "{{ rhoas_operator_namespace }}"
+    operatorgroup_target_namespace: ""
+
+- name: "deploy rhoas operator in {{ rhoas_operator_namespace }}"
+  import_role:
+    name: openshift_operator
+  vars:
+    operator_name: "{{ rhoas_operator_package_name }}"
+    packagemanifest: "{{ rhoas_operator_packagemanifest }}"
+    subscription_channel: "{{ rhoas_operator_subscription_channel }}"
+    subscription_namespace: "{{ rhoas_operator_namespace }}" 
+    subscription_name: "{{ rhoas_operator_subscription_name }}"
+    automatic_installplan_approval: "{{ rhoas_operator_subscription_automatic_installplan_approval }}"
+    subscription_starting_csv: "{{ rhoas_operator_subscription_starting_csv }}"
+    csv_prefix: "{{ rhoas_operator_csv_prefix }}"
+
+- name: "wait for rhoas operator to be ready"
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ rhoas_operator_namespace }}"
+    name: "{{ rhoas_operator_deployment_name }}"
+  register: r_rhoas_operator_deployment
+  retries: 20
+  delay: 10
+  until:
+  - r_rhoas_operator_deployment.resources is defined
+  - r_rhoas_operator_deployment.resources | length | int > 0
+  - r_rhoas_operator_deployment.resources[0].status.availableReplicas is defined
+  - r_rhoas_operator_deployment.resources[0].status.availableReplicas | int == r_rhoas_operator_deployment.resources[0].spec.replicas | int

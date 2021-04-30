@@ -1,0 +1,10 @@
+---
+
+service_binding_operator_package_name: rh-service-binding-operator
+service_binding_operator_packagemanifest: rh-service-binding-operator
+service_binding_operator_subscription_channel: preview
+service_binding_operator_subscription_name: rh-service-binding-operator
+service_binding_operator_subscription_automatic_installplan_approval: False
+service_binding_operator_subscription_starting_csv: ""
+service_binding_operator_csv_prefix: service-binding-operator
+service_binding_operator_deployment_name: service-binding-operator

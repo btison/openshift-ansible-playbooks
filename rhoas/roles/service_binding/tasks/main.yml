@@ -1,0 +1,45 @@
+---
+
+- name: "create namespace for service binding operator"
+  import_role:
+    name: openshift_namespace
+  vars:
+    namespace: "{{ service_binding_operator_namespace }}"
+    namespace_description: ""
+    namespace_display_name: ""
+
+- name: "create operatorgroup in {{ service_binding_operator_namespace }}"
+  import_role:
+    name: operatorgroup
+  vars:
+    operatorgroup_namespace: "{{ service_binding_operator_namespace }}"
+    operatorgroup_name: "{{ service_binding_operator_namespace }}"
+    operatorgroup_target_namespace: ""
+
+- name: "deploy service binding operator in {{ service_binding_operator_namespace }}"
+  import_role:
+    name: openshift_operator
+  vars:
+    operator_name: "{{ service_binding_operator_package_name }}"
+    packagemanifest: "{{ service_binding_operator_packagemanifest }}"
+    subscription_channel: "{{ service_binding_operator_subscription_channel }}"
+    subscription_namespace: "{{ service_binding_operator_namespace }}" 
+    subscription_name: "{{ service_binding_operator_subscription_name }}"
+    automatic_installplan_approval: "{{ service_binding_operator_subscription_automatic_installplan_approval }}"
+    subscription_starting_csv: "{{ service_binding_operator_subscription_starting_csv }}"
+    csv_prefix: "{{ service_binding_operator_csv_prefix }}"
+
+- name: "wait for service binding operator to be ready"
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ service_binding_operator_namespace }}"
+    name: "{{ service_binding_operator_deployment_name }}"
+  register: r_service_binding_operator_deployment
+  retries: 20
+  delay: 10
+  until:
+  - r_service_binding_operator_deployment.resources is defined
+  - r_service_binding_operator_deployment.resources | length | int > 0
+  - r_service_binding_operator_deployment.resources[0].status.availableReplicas is defined
+  - r_service_binding_operator_deployment.resources[0].status.availableReplicas | int == r_service_binding_operator_deployment.resources[0].spec.replicas | int

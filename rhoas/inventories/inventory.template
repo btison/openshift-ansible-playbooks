@@ -1,0 +1,13 @@
+[all:vars]
+
+rhoas_operator_namespace=rhoas-operator
+
+rhoas_remove_operator_group=True
+rhoas_remove_namespace=True
+rhoas_remove_cluster_resources=True
+
+service_binding_operator_namespace=service-binding-operator
+
+service_binding_remove_operator_group=True
+service_binding_remove_namespace=True
+service_binding_remove_cluster_resources=True

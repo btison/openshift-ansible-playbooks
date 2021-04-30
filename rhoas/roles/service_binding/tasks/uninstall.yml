@@ -1,0 +1,49 @@
+---
+
+- name: "delete service-binding operator in {{ service_binding_operator_namespace }}"
+  import_role:
+    name: openshift_operator
+    tasks_from: uninstall
+  vars:
+    operator_name: "{{ service_binding_operator_package_name }}"
+    subscription_namespace: "{{ service_binding_operator_namespace }}" 
+    subscription_name: "{{ service_binding_operator_subscription_name }}"
+    csv_prefix: "{{ service_binding_operator_csv_prefix }}"
+
+- name: "delete operatorgroup in {{ service_binding_operator_namespace }}"
+  when: service_binding_remove_operator_group | default(False) | bool
+  import_role:
+    name: operatorgroup
+    tasks_from: uninstall
+  vars:
+    operatorgroup_namespace: "{{ service_binding_operator_namespace }}"
+    operatorgroup_name: "{{ service_binding_operator_namespace }}"
+
+- name: "delete namespace for service binding operator"
+  when: service_binding_remove_namespace | default(False) | bool
+  import_role:
+    name: openshift_namespace
+    tasks_from: uninstall
+  vars:
+    namespace: "{{ service_binding_operator_namespace }}"
+
+- name: "delete service binding crds"
+  when: service_binding_remove_cluster_resources | default(False)| bool
+  k8s:
+    state: absent
+    api_version: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    name: "{{ item }}"
+  loop:
+  - "servicebindings.binding.operators.coreos.com"
+
+- name: "delete service binding clusterroles"
+  when: service_binding_remove_cluster_resources | default(False)| bool
+  k8s:
+    state: absent
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    name: "{{ item }}"
+  loop:
+  - "service-binding-operator-servicebinding-viewer-role"
+  - "service-binding-operator-servicebinding-editor-role"
