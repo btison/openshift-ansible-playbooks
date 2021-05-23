@@ -2,33 +2,68 @@
 
 - name: delete Gitea instance
   k8s:
-    state: absent
     definition: "{{ lookup('template', resource ) | from_yaml }}"
   vars:
     resource: "{{ resources_dir }}/gitea.j2"
+  ignore_errors: true
 
-- name: delete OpenShift objects for Gitea operator
-  k8s:
-    state: absent
-    definition: "{{ lookup('template', item ) | from_yaml }}"
-  loop:
-    - "{{ resources_dir }}/operator.j2"
-    - "{{ resources_dir }}/cluster_role_binding.j2"
-    - "{{ resources_dir }}/service_account.j2"
+- name: delete Gitea namespace
+  when: delete_gitea_namespace|bool
+  import_role:
+    name: openshift_namespace
+    tasks_from: uninstall
+  vars:
+    namespace: "{{ gitea_namespace }}"
 
-- name: delete cluster-wide OpenShift objects for Gitea operator
-  k8s:
-    state: absent
-    definition: "{{ lookup('template', item ) | from_yaml }}"
-  loop:
-    - "{{ resources_dir }}/crd.j2"
-    - "{{ resources_dir }}/cluster_role.j2"
-  when: uninstall_cluster_resources|bool == true
+# uninstall gitea operator
+- name: "delete gitea operator in {{ gitea_operator_namespace }}"
+  when: uninstall_gitea_operator | default(False) | bool
+  block:
+    - name: "delete gitea operator in {{ gitea_operator_namespace }}"
+      import_role:
+        name: openshift_operator
+        tasks_from: uninstall
+      vars:
+        operator_name: "{{ gitea_operator_package_name }}"
+        subscription_namespace: "{{ gitea_operator_namespace }}" 
+        subscription_name: "{{ gitea_operator_subscription_name }}"
+        csv_prefix: "{{ gitea_operator_csv_prefix }}"
 
-- name: delete Gitea operator namespace
-  k8s:
-    state: absent
-    definition: "{{ lookup('template', item ) | from_yaml }}"
-  loop:
-    - "{{ resources_dir }}/namespace.j2"
-  when: uninstall_namespace|bool == true
+    - name: "delete operatorgroup in {{ gitea_operator_namespace }}"
+      when: delete_gitea_operatorgroup | default(False) | bool
+      import_role:
+        name: operatorgroup
+        tasks_from: uninstall
+      vars:
+        operatorgroup_namespace: "{{ gitea_operator_namespace }}"
+        operatorgroup_name: "{{ gitea_operator_namespace }}"
+
+    - name: "delete {{ gitea_operator }}namespace"
+      when: delete_gitea_operator_namespace | default(False) | bool
+      import_role:
+        name: openshift_namespace
+        tasks_from: uninstall
+      vars:
+        namespace: "{{ gitea_operator_namespace }}"
+
+    - name: "delete rhoas crds"
+      k8s:
+        state: absent
+        api_version: apiextensions.k8s.io/v1beta1
+        kind: CustomResourceDefinition
+        name: "{{ item }}"
+      loop:
+      - "giteas.gpte.opentlc.com"
+
+    - name: delete gitea catalogsource
+      when: delete_gitea_operator_catalogsource | default(False) | bool
+      k8s:
+        state: absent
+        definition: "{{ lookup('template', resource ) | from_yaml }}"
+      vars:
+        resource: "{{ resources_dir }}/catalogsource.j2"
+        catalogsource_name: "{{ gitea_operator_catalogsource_name }}"
+        catalogsource_namespace: "openshift-marketplace"
+        catalogsource_publisher: "Red Hat AgnosticD"
+        catalog_snapshot_image: "{{ gitea_operator_catalog_snapshot_image }}"
+        catalog_snapshot_image_tag: "{{ gitea_operator_catalog_snapshot_image_tag }}"              

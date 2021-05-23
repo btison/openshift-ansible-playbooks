@@ -1,0 +1,4 @@
+[all:vars]
+
+gitea_operator_namespace=gitea-operator
+gitea_namespace=gitea

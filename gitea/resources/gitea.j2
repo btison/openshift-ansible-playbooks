@@ -1,14 +1,13 @@
-apiVersion: gpte.opentlc.com/v1alpha1
+apiVersion: gpte.opentlc.com/v1
 kind: Gitea
 metadata:
-  name: "{{ gitea_operator_gitea_name }}"
-  namespace: "{{ gitea_operator_project }}"
+  name: "{{ gitea_name }}"
 spec:
-  giteaImage: "{{ gitea_operator_gitea_image }}"
-  giteaImageTag: "{{ gitea_operator_gitea_image_tag }}"
-  giteaVolumeSize: "{{ gitea_operator_gitea_volume_size }}"
-  postgresqlVolumeSize: "{{ gitea_operator_postgresql_volume_size }}"
-  giteaSsl: "{{ gitea_operator_ssl_route }}"
-{% if gitea_operator_gitea_route | default("") | length > 0 %}  
-  giteaRoute: "{{ gitea_operator_gitea_route }}"
+  giteaImage: "{{ gitea_image }}"
+  giteaImageTag: "{{ gitea_image_tag }}"
+  giteaVolumeSize: "{{ gitea_volume_size }}"
+  postgresqlVolumeSize: "{{ gitea_postgresql_volume_size }}"
+  giteaSsl: "{{ gitea_ssl_route }}"
+{% if gitea_route | default("") | length > 0 %}  
+  giteaRoute: "{{ gitea_route }}"
 {% endif %}

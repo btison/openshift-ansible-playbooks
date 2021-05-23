@@ -1,9 +1,11 @@
 ---
 
-ocp_project: gitea
+uninstall_gitea_operator: false
 
-ocp_username: developer
+delete_gitea_operatorgroup: true
 
-uninstall_cluster_resources: false
+delete_gitea_operator_namespace: true
 
-uninstall_namespace: true
+delete_gitea_namespace: true
+
+delete_gitea_operator_catalogsource: true
