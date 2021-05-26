@@ -8,7 +8,7 @@
 - name: "remove {{ kafka_cluster }} kafka cluster"
   k8s:
     state: absent
-    api_version: kafka.strimzi.io/v1beta1
+    api_version: "{{ kafka_cr_api_version }}"
     kind: Kafka
     namespace: "{{ kafka_cluster_namespace }}"
     name: "{{ kafka_cluster }}"

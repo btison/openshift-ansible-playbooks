@@ -5,7 +5,7 @@
     name: openshift_operator
     tasks_from: uninstall
   vars:
-    operator_name: strimzi-operator
+    operator_name: amq-streams-operator
     subscription_namespace: "{{ strimzi_operator_namespace }}" 
     subscription_name: "{{ amq_streams_operator_subscription_name }}"
     csv_prefix: "{{ amq_streams_operator_csv_prefix }}"

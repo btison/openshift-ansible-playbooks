@@ -25,7 +25,7 @@ spec:
 {% endif %}
 {% if kafka_authentication|upper == 'SCRAM' %}
         authentication:
-          type: scram-sha=512
+          type: scram-sha-512
 {% endif %}
 {% if kafka_listener_external|bool == true %}
       - name: external

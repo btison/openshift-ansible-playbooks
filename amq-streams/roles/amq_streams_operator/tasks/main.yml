@@ -36,7 +36,7 @@
     subscription_starting_csv: "{{ amq_streams_operator_subscription_starting_csv }}"
     csv_prefix: "{{ amq_streams_operator_csv_prefix }}"
 
-- name: get deployments in {{ strimzi_operator_namespace }}"
+- name: "get deployments in {{ strimzi_operator_namespace }}"
   k8s_info:
     api_version: apps/v1
     kind: Deployment
