@@ -40,7 +40,7 @@ kafka_storage_type=persistent
 kafka_listener_external=true
 kafka_listener_external_type=route
 
-# values: none, oauth
+# values: none, scram, oauth
 kafka_authentication=oauth
 
 # authentication oauth

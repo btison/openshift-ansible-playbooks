@@ -23,6 +23,10 @@ spec:
           userNameClaim: preferred_username
           maxSecondsWithoutReauthentication: {{ kafka_oauth_jwt_token_lifespan }} 
 {% endif %}
+{% if kafka_authentication|upper == 'SCRAM' %}
+        authentication:
+          type: scram-sha=512
+{% endif %}
 {% if kafka_listener_external|bool == true %}
       - name: external
         port: 9094
@@ -36,6 +40,10 @@ spec:
           jwksEndpointUri: https://{{ kafka_oauth_rhsso_host }}/auth/realms/{{ kafka_oauth_rhsso_realm }}/protocol/openid-connect/certs
           userNameClaim: preferred_username
           maxSecondsWithoutReauthentication: {{ kafka_oauth_jwt_token_lifespan }} 
+{% endif %}
+{% if kafka_listener_external|bool == true and kafka_authentication|upper == 'SCRAM' %}
+        authentication:
+          type: scram-sha-512
 {% endif %}
     resources:
       requests:
@@ -187,9 +195,12 @@ spec:
       log.message.format.version: {{ kafka_log_message_format_version }}
     storage:
 {% if kafka_storage_type == "persistent" %}
-      type: persistent-claim
-      size: {{ kafka_volume_capacity }}
-      deleteClaim: {{ kafka_delete_claim }}
+      type: jbod
+      volumes:
+        - id: 0
+          type: persistent-claim
+          size: {{ kafka_volume_capacity }}
+          deleteClaim: {{ kafka_delete_claim }}
 {% endif %}
 {% if kafka_storage_type == "ephemeral" %}
       type: ephemeral
