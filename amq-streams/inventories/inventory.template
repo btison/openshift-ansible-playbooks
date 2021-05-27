@@ -17,16 +17,16 @@ strimzi_operator_remove_operator_group=true
 strimzi_operator_remove_namespace=true
 strimzi_operator_remove_cluster_resources=true
 
-# Strimzi 0.22.x: kafka.strimzi.io/v1beta2, AMQ streams: kafka.strimzi.io/v1beta1
+# Strimzi 0.22.x: kafka.strimzi.io/v1beta2, AMQ streams: kafka.strimzi.io/v1beta2
 kafka_cr_api_version=kafka.strimzi.io/v1beta2
 
 kafka_cluster_namespace=kafka
 
 kafka_cluster=kafka-cluster
 
-# Strimzi 0.22.x: 2.7.0, AMQ Streams 1.6.3: 2.6.0
+# Strimzi 0.22.x: 2.7.0, AMQ Streams 1.7.x: 2.7.0
 kafka_version=2.7.0
-# Strimzi 0.22.x: 2.7, AMQ Streams 1.6.3: 2.6
+# Strimzi 0.22.x: 2.7, AMQ Streams 1.7.x: 2.7
 kafka_log_message_format_version=2.7
 
 kafka_replicas=3

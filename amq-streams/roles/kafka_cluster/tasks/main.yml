@@ -7,6 +7,15 @@
     namespace_description: ""
     namespace_display_name: ""
 
+- name: create metrics configmaps 
+  k8s:
+    state: present
+    namespace: "{{ kafka_cluster_namespace }}"
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+    - "{{ resources_dir }}/kafka-metrics-configmap.j2"
+    - "{{ resources_dir }}/zookeeper-metrics-configmap.j2"
+
 - name: "create {{ kafka_cluster }} kafka cluster"
   k8s:
     state: present

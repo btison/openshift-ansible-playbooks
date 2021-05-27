@@ -1,5 +1,11 @@
 ---
 
+kafka_configmap_metrics: kafka-metrics
+kafka_configmap_metrics_key: metrics-config.yml
+
+zookeeper_configmap_metrics: zookeeper-metrics
+zookeeper_configmap_metrics_key: metrics-config.yml
+
 # zookeeper persistent storage
 zookeeper_volume_capacity: 1Gi
 zookeeper_delete_claim: "true"

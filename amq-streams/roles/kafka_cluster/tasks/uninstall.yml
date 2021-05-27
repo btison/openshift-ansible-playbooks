@@ -5,6 +5,17 @@
     name: kafka_topic
     tasks_from: uninstall
 
+- name: "remove metrics configmaps"
+  k8s:
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    namespace: "{{ kafka_cluster_namespace }}"
+    name: "{{ item }}"
+  loop:
+    - "{{ kafka_configmap_metrics }}"
+    - "{{ zookeeper_configmap_metrics }}"
+
 - name: "remove {{ kafka_cluster }} kafka cluster"
   k8s:
     state: absent
