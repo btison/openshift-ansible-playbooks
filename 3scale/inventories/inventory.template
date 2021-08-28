@@ -9,6 +9,8 @@ threescale_subscription_channel=
 threescale_remove_operator_group=true
 threescale_remove_cluster_resources=false
 
+threescale_system_database=mysql
+
 # system seed
 threescale_create_system_seed_secret=true
 threescale_master_domain=3scale-master

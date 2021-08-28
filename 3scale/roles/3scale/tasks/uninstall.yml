@@ -1,6 +1,7 @@
 ---
 
 - name: remove the tenants
+  when: threescale_create_tenants is true
   include_tasks: 
       file: uninstall_tenants.yml
   loop: "{{ range(threescale_start_tenant, threescale_end_tenant|int + 1, 1)|list }}"

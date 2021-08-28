@@ -6,10 +6,18 @@ spec:
   tenantName: {{ threescale_tenant_name }}
   wildcardDomain: "{{ ocp_domain }}"
   resourceRequirementsEnabled: false
-{% if threescale_file_storage | default("rwo") != "rwo" %} 
+{% if (threescale_file_storage | default("rwo") == "rwo") and (threescale_system_database | default("mysql") == "mysql") %} 
+  system: {}
+{% else %}
   system:
+{% endif %}
+{% if threescale_file_storage | default("rwo") != "rwo" %} 
     fileStorage:
       simpleStorageService:
         configurationSecretRef:
           name: {{ threescale_object_storage_secret }}
+{% endif %}
+{% if threescale_system_database | default("mysql") == "postgresql" %} 
+    database:
+      postgresql: {}
 {% endif %}
