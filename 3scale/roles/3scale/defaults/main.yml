@@ -11,7 +11,7 @@ threescale_automatic_installplan_approval: false
 threescale_subscription_starting_csv: ""
 threescale_csv_prefix: 3scale-operator
 
-threescale_operator_deployment: 3scale-operator
+threescale_operator_deployment: threescale-operator-controller-manager
 
 threescale_object_storage_secret: aws-auth
 threescale_system_storage_size: 1Gi

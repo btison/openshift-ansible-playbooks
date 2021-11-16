@@ -33,7 +33,7 @@
 
 - name: "wait for 3scale operator to be ready"
   k8s_info:
-    api_version: v1
+    api_version: apps/v1
     kind: Deployment
     namespace: "{{ threescale_subscription_namespace }}"
     name: "{{ threescale_operator_deployment }}"
@@ -41,10 +41,10 @@
   retries: 20
   delay: 10
   until:
-  - r_threescale_operator_deployment.resources is defined
-  - r_threescale_operator_deployment.resources | length | int > 0
-  - r_threescale_operator_deployment.resources[0].status.availableReplicas is defined
-  - r_threescale_operator_deployment.resources[0].status.availableReplicas | int == r_threescale_operator_deployment.resources[0].spec.replicas | int
+    - r_threescale_operator_deployment.resources is defined
+    - r_threescale_operator_deployment.resources | length | int > 0
+    - r_threescale_operator_deployment.resources[0].status.availableReplicas is defined
+    - r_threescale_operator_deployment.resources[0].status.availableReplicas | int == r_threescale_operator_deployment.resources[0].spec.replicas | int
 
 - name: "create 3scale AWS S3 Secret"
   when: threescale_file_storage | default("")  == "s3"
