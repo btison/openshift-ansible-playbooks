@@ -1,0 +1,61 @@
+---
+- name: "create namespace for kafka cluster"
+  import_role:
+    name: openshift-namespace
+  vars:
+    namespace: "{{ kafka_cluster_namespace }}"
+    namespace_description: ""
+    namespace_display_name: ""
+
+- name: create metrics configmaps 
+  k8s:
+    state: present
+    namespace: "{{ kafka_cluster_namespace }}"
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+    - "templates/kafka-metrics-configmap.j2"
+    - "templates/zookeeper-metrics-configmap.j2"
+
+- name: "create secret for oauth client credentials grant"
+  k8s:
+    state: present
+    namespace: "{{ kafka_cluster_namespace }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "templates/client-credentials-secret.j2"
+
+- name: "read tls certificate and private key"
+  set_fact:
+    kafka_tls_secret_crt_value: "{{ lookup('file', kafka_tls_secret_crt_file) | b64encode }}"
+    kafka_tls_secret_privkey_value: "{{ lookup('file', kafka_tls_secret_privkey_file) | b64encode }}"
+
+- name: "create secret for tls"
+  k8s:
+    state: present
+    namespace: "{{ kafka_cluster_namespace }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "templates/kafka-tls-secret.j2"
+
+- name: "create {{ kafka_cluster }} kafka cluster"
+  k8s:
+    state: present
+    namespace: "{{ kafka_cluster_namespace }}"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "templates/kafka.j2"
+
+- name: "wait until kafka-cluster-entity-operator is active in {{ kafka_cluster_namespace }}"
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ kafka_cluster_namespace }}"
+    name: "{{ entity_operator_deployment }}"
+  register: r_kafka_cluster_entity_operator
+  retries: 50
+  delay: 10
+  until:
+  - r_kafka_cluster_entity_operator.resources is defined
+  - r_kafka_cluster_entity_operator.resources | length | int > 0
+  - r_kafka_cluster_entity_operator.resources[0].status.availableReplicas is defined
+  - r_kafka_cluster_entity_operator.resources[0].status.availableReplicas | int == r_kafka_cluster_entity_operator.resources[0].spec.replicas | int

@@ -1,0 +1,3 @@
+---
+
+entity_operator_deployment: "{{ kafka_cluster }}-entity-operator"

@@ -1,0 +1,60 @@
+---
+
+kafka_configmap_metrics: kafka-metrics
+kafka_configmap_metrics_key: metrics-config.yml
+
+zookeeper_configmap_metrics: zookeeper-metrics
+zookeeper_configmap_metrics_key: metrics-config.yml
+
+# zookeeper persistent storage
+zookeeper_volume_capacity: 1Gi
+zookeeper_delete_claim: "true"
+
+zookeeper_requests_cpu: 100m
+zookeeper_requests_memory: 100M
+zookeeper_limits_cpu: 500m
+zookeeper_limits_memory: 250M
+
+zookeeper_readiness_probe_initial_delay_seconds: 15
+zookeeper_readiness_probe_timeout_seconds: 5
+zookeeper_liveness_probe_initial_delay_seconds: 30
+zookeeper_liveness_probe_timeout_seconds: 5
+
+# kafka persistent storage
+kafka_volume_capacity: 10Gi
+kafka_delete_claim: "true"
+
+kafka_enable_auto_create_topics: "false"
+kafka_offsets_topic_replication_factor: 3
+kafka_transaction_state_log_replication_factor: 3
+transaction_state_log_min_isr: 2
+
+kafka_requests_cpu: 300m
+kafka_requests_memory: 500M
+kafka_limits_cpu: 1
+kafka_limits_memory: 2G
+
+kafka_readiness_probe_initial_delay_seconds: 15
+kafka_readiness_probe_timeout_seconds: 5
+kafka_liveness_probe_initial_delay_seconds: 45
+kafka_liveness_probe_timeout_seconds: 5
+
+topic_operator_requests_cpu: 250m
+topic_operator_requests_memory: 250M
+topic_operator_limits_cpu: 500m
+topic_operator_limits_memory: 500M
+
+topic_operator_readiness_probe_initial_delay_seconds : 10
+topic_operator_readiness_probe_timeout_seconds: 5
+topic_operator_liveness_probe_initial_delay_seconds : 15
+topic_operator_liveness_probe_timeout_seconds: 5
+
+user_operator_requests_cpu: 150m
+user_operator_requests_memory: 150M
+user_operator_limits_cpu: 250m
+user_operator_limits_memory: 250M
+
+user_operator_readiness_probe_initial_delay_seconds: 10
+user_operator_readiness_probe_timeout_seconds: 5
+user_operator_liveness_probe_initial_delay_seconds: 15 
+user_operator_liveness_probe_timeout_seconds: 5

@@ -1,0 +1,36 @@
+---
+
+- name: "delete kafka topics"
+  import_role:
+    name: kafka-topic
+    tasks_from: uninstall
+
+- name: "remove kafka resources"
+  k8s:
+    state: absent
+    api_version: "{{ item.api_version }}"
+    kind: "{{ item.kind }}"
+    namespace: "{{ kafka_cluster_namespace }}"
+    name: "{{ item.name }}"
+  loop:
+    - api_version: v1
+      kind: ConfigMap
+      name: "{{ kafka_configmap_metrics }}"
+    - api_version: v1
+      kind: ConfigMap
+      name: "{{ zookeeper_configmap_metrics }}"
+    - api_version: v1
+      kind: Secret
+      name: "{{ kafka_oauth_client_credentials_secret }}"
+    - api_version: v1
+      kind: Secret
+      name: "{{ kafka_tls_secret }}"
+
+
+- name: "remove {{ kafka_cluster }} kafka cluster"
+  k8s:
+    state: absent
+    api_version: "{{ kafka_cr_api_version }}"
+    kind: Kafka
+    namespace: "{{ kafka_cluster_namespace }}"
+    name: "{{ kafka_cluster }}"
