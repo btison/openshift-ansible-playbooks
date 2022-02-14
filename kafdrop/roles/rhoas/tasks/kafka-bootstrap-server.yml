@@ -1,0 +1,15 @@
+---
+
+- name: "get kafkaconnection for {{ streams_apache_kafka_instance_name }} cluster"
+  k8s_info: 
+    api_version: rhoas.redhat.com/v1alpha1
+    kind: kafkaconnection
+    namespace: "{{ namespace }}"
+    name: "{{ streams_apache_kafka_instance_name }}"
+  register: r_kafka_connection
+
+- set_fact:
+    streams_apache_kafka_bootstrap_server_host: "{{ r_kafka_connection.resources[0].status.bootstrapServerHost }}"
+
+- debug:
+    msg: "Streams for Apache Kafka cluster bootstrap server: {{ r_kafka_connection.resources[0].status.bootstrapServerHost }}"

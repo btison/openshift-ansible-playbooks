@@ -1,0 +1,9 @@
+apiVersion: rhoas.redhat.com/v1alpha1
+kind: KafkaConnection
+metadata:
+  name: {{ streams_apache_kafka_instance_name }}
+spec:
+  accessTokenSecretName: {{ cloud_services_access_token_secret }}
+  credentials:
+    serviceAccountSecretName: {{ cloud_services_service_account_secret }}
+  kafkaId: '{{ streams_apache_kafka_instance_id }}'

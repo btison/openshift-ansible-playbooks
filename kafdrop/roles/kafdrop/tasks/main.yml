@@ -1,0 +1,43 @@
+---
+
+- name: "install rhoas operator"
+  import_role:
+    name: rhoas-operator
+    tasks_from: main
+
+- name: "create kafkaconnection cr"
+  import_role:
+    name: rhoas
+    tasks_from: create-kafka-connection
+  vars:
+    namespace: "{{ kafdrop_namespace }}"
+
+- name: "set streams for apache kafka bootstrap server"
+  import_role:
+    name: rhoas
+    tasks_from: kafka-bootstrap-server
+  vars:
+    namespace: "{{ kafdrop_namespace }}"
+
+- name: "get service registry url"
+  when: configure_service_registry | bool
+  import_role:
+    name: rhoas
+    tasks_from: service-registry-url
+
+- name: "get kafka properties"
+  set_fact:
+    kafdrop_kafka_properties: "{{ lookup('template', 'templates/kafka.properties.j2') }}"
+
+- name: "create kafdrop resources"
+  k8s:
+    state: present
+    namespace: "{{ kafdrop_namespace }}"
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+    - templates/service-account.j2
+    - templates/secret.j2
+    - templates/deployment.j2
+    - templates/service.j2
+    - templates/route.j2
+  

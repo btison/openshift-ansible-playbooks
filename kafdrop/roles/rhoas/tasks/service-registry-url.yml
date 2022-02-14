@@ -1,0 +1,19 @@
+---
+
+- name: "find service registry instances"
+  shell: >
+    {{ rhoas_cli }} service-registry list -o json | jq -r '.items' 
+  register: r_service_registry_instances
+
+- set_fact:
+    service_registry_instances: "{{ r_service_registry_instances.stdout | to_json | from_json }}"
+
+- name: "get service registry url"
+  set_fact:
+    service_registry_instance_url: "{{ service_registry_instances | json_query(query) }}"
+  vars:
+    query: >-
+      [?name == '{{ service_registry_instance_name }}'].registryUrl|[0]
+
+- debug:
+    msg: "Service Registry instance URL: {{ service_registry_instance_url }}"

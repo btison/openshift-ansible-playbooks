@@ -1,0 +1,21 @@
+[all:vars]
+
+kafdrop_namespace=
+
+kafdrop_image=obsidiandynamics/kafdrop:latest
+
+# RHOAS Operator
+rhoas_operator_namespace=openshift-operators
+
+# Streams for Apache Kafka
+cloud_services_service_account_secret=rh-cloud-services-service-account
+cloud_services_service_account_secret_password=client-secret
+cloud_services_service_account_username=
+cloud_services_service_account_password=
+cloud_services_access_token_secret=rh-cloud-services-api-accesstoken
+cloud_services_access_token=
+streams_apache_kafka_instance_name=
+
+# OpenShift Service Registry
+configure_service_registry=false
+service_registry_instance_name=

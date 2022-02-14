@@ -1,0 +1,40 @@
+---
+
+- name: "delete rhoas operator in {{ rhoas_operator_namespace }}"
+  import_role:
+    name: openshift_operator
+    tasks_from: uninstall
+  vars:
+    operator_name: "|{{ rhoas_operator_package_name }}"
+    subscription_namespace: "{{ rhoas_operator_namespace }}" 
+    subscription_name: "{{ rhoas_operator_subscription_name }}"
+    csv_prefix: "{{ rhoas_operator_csv_prefix }}"
+
+- name: "delete operatorgroup in {{ rhoas_operator_namespace }}"
+  when: rhoas_remove_operator_group | default(False) | bool
+  import_role:
+    name: operatorgroup
+    tasks_from: uninstall
+  vars:
+    operatorgroup_namespace: "{{ rhoas_operator_namespace }}"
+    operatorgroup_name: "{{ rhoas_operator_namespace }}"
+
+- name: "delete namespace for rhoas operator"
+  when: rhoas_remove_namespace | default(False) | bool
+  import_role:
+    name: openshift_namespace
+    tasks_from: uninstall
+  vars:
+    namespace: "{{ rhoas_operator_namespace }}"
+
+- name: "delete rhoas crds"
+  when: rhoas_remove_cluster_resources | default(False)| bool
+  k8s:
+    state: absent
+    api_version: apiextensions.k8s.io/v1beta1
+    kind: CustomResourceDefinition
+    name: "{{ item }}"
+  loop:
+  - "cloudserviceaccountrequests.rhoas.redhat.com"
+  - "cloudservicesrequests.rhoas.redhat.com"
+  - "kafkaconnections.rhoas.redhat.com"

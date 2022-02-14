@@ -1,0 +1,41 @@
+---
+
+- include_tasks:
+    file: create-cloud-services-api-secret.yml
+
+- include_tasks:
+    file: create-cloud-services-service-account-secret.yml
+
+- name: "find id for {{ streams_apache_kafka_instance_name }} streams for apache kafka instance"
+  shell: >
+    {{ rhoas_cli }} kafka list -o json --search {{ streams_apache_kafka_instance_name }} | jq -r '.items[0].id'
+  register: r_streams_apache_kafka_instance_id
+  changed_when: False
+
+- set_fact:
+    streams_apache_kafka_instance_id: "{{ r_streams_apache_kafka_instance_id.stdout }}"
+
+- name: "create kafka connection"
+  k8s:
+    state: present
+    namespace: "{{ namespace }}"
+    definition: "{{ lookup('template',resource ) | from_yaml }}"
+  vars:
+    resource: "templates/kafkaconnection.j2"
+
+- name: "wait until kafka connection is established"
+  k8s_info:
+    api_version: rhoas.redhat.com/v1alpha1
+    kind: KafkaConnection
+    namespace: "{{ namespace }}"
+    name: "{{ streams_apache_kafka_instance_name }}"
+  register: r_kafkaconnection
+  retries: 20
+  delay: 10
+  until:
+    - r_kafkaconnection.resources is defined
+    - r_kafkaconnection.resources | length | int > 0
+    - r_kafkaconnection.resources[0].status.bootstrapServerHost is defined
+    - r_kafkaconnection.resources[0].status.message is defined
+    - r_kafkaconnection.resources[0].status.message == 'Created'
+  

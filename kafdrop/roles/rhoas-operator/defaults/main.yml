@@ -1,0 +1,10 @@
+---
+
+rhoas_operator_package_name: rhoas-operator
+rhoas_operator_packagemanifest: rhoas-operator
+rhoas_operator_subscription_channel: beta
+rhoas_operator_subscription_name: rhoas-operator
+rhoas_operator_subscription_automatic_installplan_approval: True
+rhoas_operator_subscription_starting_csv: ""
+rhoas_operator_csv_prefix: rhoas-operator
+rhoas_operator_deployment_name: rhoas-operator
