@@ -11,10 +11,9 @@
   k8s:
     state: present
     namespace: "{{ kafka_cluster_namespace }}"
-    definition: "{{ lookup('template', item ) | from_yaml }}"
-  loop:
-    - "templates/kafka-metrics-configmap.j2"
-    - "templates/zookeeper-metrics-configmap.j2"
+    definition: "{{ lookup('template', resource ) | from_yaml }}"
+  vars:
+    resource: "templates/kafka-metrics-configmap.j2"
 
 - name: "create secret for oauth client credentials grant"
   k8s:

@@ -30,7 +30,7 @@ spec:
         tls: true
         authentication:
           type: oauth
-          clientId: kafka
+          clientId: {{ kafka_oauth_plain_client_id }}
           clientSecret:
             key: {{ kafka_oauth_client_credentials_secret_key }}
             secretName: {{ kafka_oauth_client_credentials_secret }}
@@ -74,7 +74,7 @@ spec:
       offsets.topic.replication.factor: {{ kafka_offsets_topic_replication_factor }}
       transaction.state.log.replication.factor: {{ kafka_transaction_state_log_replication_factor }}
       transaction.state.log.min.isr: {{ transaction_state_log_min_isr }}
-      log.message.format.version: {{ kafka_log_message_format_version }}
+      inter.broker.protocol.version: '{{ kafka_inter_broker_protocol_version }}'
     storage:
 {% if kafka_storage_type == "persistent" %}
       type: jbod

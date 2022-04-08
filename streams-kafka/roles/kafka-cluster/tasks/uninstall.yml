@@ -17,15 +17,11 @@
       kind: ConfigMap
       name: "{{ kafka_configmap_metrics }}"
     - api_version: v1
-      kind: ConfigMap
-      name: "{{ zookeeper_configmap_metrics }}"
-    - api_version: v1
       kind: Secret
       name: "{{ kafka_oauth_client_credentials_secret }}"
     - api_version: v1
       kind: Secret
       name: "{{ kafka_tls_secret }}"
-
 
 - name: "remove {{ kafka_cluster }} kafka cluster"
   k8s:

@@ -1,10 +1,10 @@
 ---
 
 kafka_configmap_metrics: kafka-metrics
-kafka_configmap_metrics_key: metrics-config.yml
+kafka_configmap_metrics_key: kafka-metrics-config.yml
 
-zookeeper_configmap_metrics: zookeeper-metrics
-zookeeper_configmap_metrics_key: metrics-config.yml
+zookeeper_configmap_metrics: kafka-metrics
+zookeeper_configmap_metrics_key: zookeeper-metrics-config.yml
 
 # zookeeper persistent storage
 zookeeper_volume_capacity: 1Gi
@@ -21,7 +21,6 @@ zookeeper_liveness_probe_initial_delay_seconds: 30
 zookeeper_liveness_probe_timeout_seconds: 5
 
 # kafka persistent storage
-kafka_volume_capacity: 10Gi
 kafka_delete_claim: "true"
 
 kafka_enable_auto_create_topics: "false"
