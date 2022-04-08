@@ -1,0 +1,35 @@
+---
+
+- name: "delete prometheus resources"
+  k8s:
+    state: absent
+    api_version: "{{ item.api_version }}"
+    kind: "{{ item.kind }}"
+    namespace: "{{ monitoring_namespace }}"
+    name: "{{ item.name }}"
+  loop:
+    - api_version: monitoring.coreos.com/v1
+      kind: PodMonitor
+      name: "{{ prometheus_kafka_pod_monitor }}"
+    - api_version: monitoring.coreos.com/v1
+      kind: Prometheus
+      name: "{{ prometheus_name }}"
+    - api_version: route.openshift.io/v1
+      kind: route
+      name: "{{ prometheus_route_name }}"
+    - api_version: v1
+      kind: service
+      name: "{{ prometheus_service_name }}"
+    - api_version: v1
+      kind: secret
+      name: "{{ prometheus_oauth_proxy_secret }}"
+    - api_version: v1
+      kind: serviceaccount
+      name: "{{ prometheus_service_account }}"
+
+- name: "delete prometheus operator"
+  import_role:
+    name: prometheus-operator
+    tasks_from: uninstall
+  vars:
+    prometheus_operator_namespace: "{{ monitoring_namespace }}"

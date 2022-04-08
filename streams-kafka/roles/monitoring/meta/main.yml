@@ -1,0 +1,19 @@
+---
+
+dependencies:
+  - role: openshift-domain
+    when: >
+      ACTION is not defined or
+      ACTION is none or
+      ACTION|trim() == "" or
+      ACTION|trim() == "install"
+  - role: openshift-namespace
+    when: >
+      ACTION is not defined or
+      ACTION is none or
+      ACTION|trim() == "" or
+      ACTION|trim() == "install"
+    vars:
+      namespace: "{{ monitoring_namespace }}"
+      namespace_description: ""
+      namespace_display_name: ""      

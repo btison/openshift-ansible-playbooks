@@ -1,0 +1,21 @@
+---
+
+- name: "get operatorgroups in {{ operatorgroup_namespace }}"
+  k8s_info:
+    api_version: operators.coreos.com/v1
+    kind: OperatorGroup
+    namespace: "{{ operatorgroup_namespace }}"
+  register: r_operatorgroup
+
+- name: set operatorgroup name
+  when: r_operatorgroup.resources | length > 0
+  set_fact:
+    operatorgroup_name: "{{ r_operatorgroup.resources[0].metadata.name }}"  
+
+- name: "remove operator group in {{ operatorgroup_namespace }}"
+  k8s:
+    state: absent
+    api_version: operators.coreos.com/v1
+    kind: OperatorGroup
+    name: "{{ operatorgroup_name }}"
+    namespace: "{{ operatorgroup_namespace }}"

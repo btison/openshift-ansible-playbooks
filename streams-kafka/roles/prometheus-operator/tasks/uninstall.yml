@@ -1,0 +1,28 @@
+---
+
+- name: "delete prometheus operator in {{ prometheus_operator_namespace }}"
+  import_role:
+    name: openshift-operator
+    tasks_from: uninstall
+  vars:
+    operator_name: prometheus-operator
+    subscription_namespace: "{{ prometheus_operator_namespace }}" 
+    subscription_name: "{{ prometheus_operator_subscription_name }}"
+    csv_prefix: "{{ prometheus_operator_csv_prefix }}"
+
+- name: "delete operatorgroup in {{ prometheus_operator_namespace }}"
+  when: prometheus_remove_operator_group | default(False) | bool
+  import_role:
+    name: operatorgroup
+    tasks_from: uninstall
+  vars:
+    operatorgroup_namespace: "{{ prometheus_operator_namespace }}"
+    operatorgroup_name: "{{ prometheus_operatorgroup }}"
+
+- name: "delete namespace for prometheus operator"
+  when: prometheus_remove_namespace | default(False) | bool
+  import_role:
+    name: openshift-namespace
+    tasks_from: uninstall
+  vars:
+    namespace: "{{ prometheus_operator_namespace }}"

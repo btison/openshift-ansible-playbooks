@@ -1,0 +1,12 @@
+---
+
+prometheus_operatorgroup: "{{ prometheus_operator_namespace }}"
+
+# prometheus operator
+prometheus_operator_packagemanifest: prometheus
+prometheus_operator_deployment_name: prometheus-operator
+prometheus_operator_subscription_name: prometheus
+prometheus_operator_subscription_channel: beta
+prometheus_operator_subscription_automatic_installplan_approval: true
+prometheus_operator_subscription_starting_csv: ""
+prometheus_operator_csv_prefix: prometheusoperator

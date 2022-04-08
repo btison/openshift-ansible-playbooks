@@ -1,0 +1,19 @@
+---
+
+prometheus_name: prometheus-kafka
+prometheus_auth_proxy_image: quay.io/openshift/origin-oauth-proxy:4.9
+prometheus_route_name: prometheus
+prometheus_service_name: prometheus
+prometheus_storage_request: 10Gi
+prometheus_data_retention: 45d
+prometheus_requests_cpu: 50m
+prometheus_requests_memory: 400Mi
+prometheus_limits_cpu: 500m
+prometheus_limits_memory: 1Gi
+prometheus_oauth_proxy_secret: prometheus-k8s-proxy
+prometheus_tls_secret: prometheus-k8s-tls
+prometheus_service_account: prometheus
+prometheus_kafka_pod_monitor: kafka-resources-metrics
+prometheus_kafka_pod_monitor_selector: "{{ kafka_cluster_namespace }}"
+prometheus_clusterrole: prometheus-kafka
+prometheus_clusterrole_binding: prometheus-kafka

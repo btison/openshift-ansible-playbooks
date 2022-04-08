@@ -1,0 +1,45 @@
+---
+
+- name: "create namespace for prometheus operator"
+  import_role:
+    name: openshift-namespace
+  vars:
+    namespace: "{{ prometheus_operator_namespace }}"
+    namespace_description: ""
+    namespace_display_name: ""
+
+- name: "create operatorgroup in {{ prometheus_operator_namespace }}"
+  import_role:
+    name: operatorgroup
+  vars:
+    operatorgroup_namespace: "{{ prometheus_operator_namespace }}"
+    operatorgroup_name: "{{ prometheus_operatorgroup }}"
+    operatorgroup_target_namespace: "{{ prometheus_operator_namespace }}"
+
+- name: "deploy prometheus operator in {{ prometheus_operator_namespace }}"
+  import_role:
+    name: openshift-operator
+  vars:
+    operator_name: prometheus-operator
+    packagemanifest: "{{ prometheus_operator_packagemanifest }}"
+    subscription_channel: "{{ prometheus_operator_subscription_channel }}"
+    subscription_namespace: "{{ prometheus_operator_namespace }}" 
+    subscription_name: "{{ prometheus_operator_subscription_name }}"
+    automatic_installplan_approval: "{{ prometheus_operator_subscription_automatic_installplan_approval }}"
+    subscription_starting_csv: "{{ prometheus_operator_subscription_starting_csv }}"
+    csv_prefix: "{{ prometheus_operator_csv_prefix }}"
+
+- name: "wait for prometheus operator to be ready"
+  k8s_info:
+    api_version: v1
+    kind: Deployment
+    namespace: "{{ prometheus_operator_namespace}}"
+    name: "{{ prometheus_operator_deployment_name }}"
+  register: r_prometheus_operator_deployment
+  retries: 20
+  delay: 10
+  until:
+    - r_prometheus_operator_deployment.resources is defined
+    - r_prometheus_operator_deployment.resources | length | int > 0
+    - r_prometheus_operator_deployment.resources[0].status.availableReplicas is defined
+    - r_prometheus_operator_deployment.resources[0].status.availableReplicas | int == r_prometheus_operator_deployment.resources[0].spec.replicas | int

@@ -1,0 +1,27 @@
+---
+
+- name: "install prometheus operator"
+  import_role:
+    name: prometheus-operator
+    tasks_from: main
+  vars:
+    prometheus_operator_namespace: "{{ monitoring_namespace }}"
+
+- name: "define random value for oauth session"
+  set_fact:
+    prometheus_oauth_session: "{{ lookup('password', '/dev/null chars=ascii_letters length=43') }}"
+
+- name: "create prometheus resources"
+  k8s:
+    state: present
+    namespace: "{{ monitoring_namespace }}"
+    definition: "{{ lookup('template', item) | from_yaml }}"
+  loop:
+    - templates/prometheus-serviceaccount.j2
+    - templates/prometheus-clusterrole.j2
+    - templates/prometheus-clusterrole-binding.j2
+    - templates/prometheus-oauth-proxy-secret.j2
+    - templates/prometheus-service.j2
+    - templates/prometheus-route.j2
+    - templates/prometheus.j2
+    - templates/prometheus-kafka-podmonitor.j2

@@ -42,3 +42,6 @@ kafka_tls_secret_privkey_file=
 zookeeper_replicas=3
 
 zookeeper_storage_type=persistent
+
+# Monitoring
+monitoring_namespace=kafka-monitoring
