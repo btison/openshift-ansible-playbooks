@@ -8,6 +8,7 @@ kafdrop_image=obsidiandynamics/kafdrop:latest
 rhoas_operator_namespace=openshift-operators
 
 # Streams for Apache Kafka
+use_streams_for_apache_kafka=true
 cloud_services_service_account_secret=rh-cloud-services-service-account
 cloud_services_service_account_secret_password=client-secret
 cloud_services_service_account_username=

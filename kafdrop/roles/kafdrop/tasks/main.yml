@@ -1,11 +1,13 @@
 ---
 
 - name: "install rhoas operator"
+  when: use_streams_for_apache_kafka | bool
   import_role:
     name: rhoas-operator
     tasks_from: main
 
 - name: "create kafkaconnection cr"
+  when: use_streams_for_apache_kafka | bool
   import_role:
     name: rhoas
     tasks_from: create-kafka-connection
@@ -13,6 +15,7 @@
     namespace: "{{ kafdrop_namespace }}"
 
 - name: "set streams for apache kafka bootstrap server"
+  when: use_streams_for_apache_kafka | bool
   import_role:
     name: rhoas
     tasks_from: kafka-bootstrap-server
