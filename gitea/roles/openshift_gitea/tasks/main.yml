@@ -161,7 +161,6 @@
   when: gitea_create_users | bool
   include_tasks: create_user.yml
   loop: "{{ range(0, gitea_num_users | int + 1, 1) | list }}"
-  when: gitea_create_users | bool
 
 - name: print the Gitea route
   debug:

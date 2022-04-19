@@ -7,7 +7,7 @@ spec:
   giteaImageTag: "{{ gitea_image_tag }}"
   giteaVolumeSize: "{{ gitea_volume_size }}"
   postgresqlVolumeSize: "{{ gitea_postgresql_volume_size }}"
-  giteaSsl: "{{ gitea_ssl_route }}"
+  giteaSsl: {{ gitea_ssl_route | bool }}
 {% if gitea_route | default("") | length > 0 %}  
   giteaRoute: "{{ gitea_route }}"
 {% endif %}
