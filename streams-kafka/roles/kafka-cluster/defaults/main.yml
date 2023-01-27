@@ -26,7 +26,9 @@ kafka_delete_claim: "true"
 kafka_enable_auto_create_topics: "false"
 kafka_offsets_topic_replication_factor: 3
 kafka_transaction_state_log_replication_factor: 3
-transaction_state_log_min_isr: 2
+kafka_transaction_state_log_min_isr: 2
+kafka_default_replication_factor: 3
+kafka_min_insync_replicas: 2
 
 kafka_requests_cpu: 300m
 kafka_requests_memory: 500M

@@ -72,8 +72,10 @@ spec:
     config:
       auto.create.topics.enable: {{ kafka_enable_auto_create_topics }}
       offsets.topic.replication.factor: {{ kafka_offsets_topic_replication_factor }}
+      default.replication.factor: {{ kafka_default_replication_factor }}
+      min.insync.replicas: {{ kafka_min_insync_replicas }}
       transaction.state.log.replication.factor: {{ kafka_transaction_state_log_replication_factor }}
-      transaction.state.log.min.isr: {{ transaction_state_log_min_isr }}
+      transaction.state.log.min.isr: {{ kafka_transaction_state_log_min_isr }}
       inter.broker.protocol.version: '{{ kafka_inter_broker_protocol_version }}'
     storage:
 {% if kafka_storage_type == "persistent" %}
@@ -151,7 +153,7 @@ spec:
 {% if kafka_enable_exporter|bool == true %}
   kafkaExporter:
     groupRegex: ".*"
-    topicRegex: "^topic-.+"
+    topicRegex: ".*"
     resources:
       requests:
         cpu: 200m
